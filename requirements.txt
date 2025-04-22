@@ -1,3 +1,7 @@
 dash
 dash-bootstrap-components
 flask
+gunicorn
+pandas
+folium
+geopy
