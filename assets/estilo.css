@@ -1,0 +1,225 @@
+/* === GERAL === */
+body {
+    background-color: #0f1a26;
+    margin: 0;
+    font-family: 'Segoe UI', sans-serif;
+}
+
+/* === LOGIN === */
+.login-container {
+    background-color: rgba(5, 14, 25, 0.85);
+    border-radius: 16px;
+    padding: 40px;
+    width: 320px;
+    margin: auto;
+    margin-top: 10vh;
+    box-shadow: 0 0 20px rgba(0, 255, 255, 0.2);
+    color: #ffffff;
+    text-align: center;
+}
+
+.login-container input {
+    width: 100%;
+    padding: 8px;
+    margin-bottom: 12px;
+    border: 1px solid #1b3f57;
+    border-radius: 6px;
+    background-color: #0d1b2a;
+    color: #ffffff;
+}
+
+.login-container button {
+    width: 100%;
+    padding: 10px;
+    background-color: #00c3ff;
+    border: none;
+    border-radius: 6px;
+    color: #000000;
+    font-weight: bold;
+    cursor: pointer;
+}
+
+.login-container button:hover {
+    background-color: #00a2d1;
+}
+
+.login-container h2 {
+    color: #00f7ff;
+}
+
+.login-container input,
+.login-container button {
+    width: 100%;
+    box-sizing: border-box;
+}
+
+/* === TOPO - NOVO === */
+.topbar-logo {
+    width: 100%;
+    padding: 16px 32px;
+    background-color: #0f1a26;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.logo-wrapper {
+    display: flex;
+    align-items: center;
+}
+
+.logo-icon {
+    max-height: 150px;
+    margin-right: 12px;
+}
+
+.logo-text {
+    font-size: 28px;
+    font-weight: bold;
+    color: #d7f5ec;
+}
+
+/* === BOTÃO DE LOGOUT === */
+.logout-btn {
+    background-color: #c0e2ec;
+    border: none;
+    border-radius: 8px;
+    padding: 10px 20px;
+    color: #0f1a26;
+    margin-left: auto;
+    font-weight: bold;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+    box-shadow: 0 0 10px rgba(0, 195, 255, 0.3);
+    max-height: 100%;
+}
+
+.logout-btn:hover {
+    background-color: #00a2d1;
+}
+
+/* === FILTROS === */
+.filtros-container {
+    background-color: #111d2f;
+    padding: 30px;
+    border-radius: 12px;
+    max-width: 800px;
+    margin: auto;
+    box-shadow: 0 0 12px rgba(0, 255, 255, 0.1);
+}
+
+/* Títulos dos campos */
+.filtros-container label {
+    color: #ffffff;
+    margin-bottom: 5px;
+    display: block;
+    font-weight: bold;
+}
+
+/* Botão processar */
+#botao-processar {
+    background-color: #c0e2ec;
+    color: #000;
+    font-weight: bold;
+    border: none;
+    border-radius: 6px;
+    padding: 10px 20px;
+    cursor: pointer;
+}
+
+#botao-processar:hover {
+    background-color: #c0e2ec;
+}
+
+/* === DROPDOWN CORRIGIDO (Dash 3 / React Select) === */
+.css-1s2u09g-control,  /* caixa fechada */
+.css-1pahdxg-control { /* caixa focada */
+    background-color: #0d1b2a !important;
+    border: 1px solid #1b3f57 !important;
+    color: rgb(183, 241, 248) !important;
+    border-radius: 6px !important;
+}
+
+/* Texto selecionado */
+.css-1uccc91-singleValue {
+    color: white !important;
+}
+
+/* Placeholder (texto inicial tipo 'Selecione...') */
+.css-1wa3eu0-placeholder {
+    color: #bbbbbb !important;
+}
+
+/* Ajustes para o input de distância */
+#input-otdr {
+    margin-bottom: 40px !important;
+    width: 100% !important;
+}
+
+/* Estilo do input numérico */
+input[type="text"] {
+    height: 38px;
+    background-color: #ffffff;
+    border: none;
+    border-radius: 6px;
+    padding: 0 12px;
+    font-size: 14px;
+    color: #000;
+    box-sizing: border-box;
+    margin-bottom: 10px;
+}
+
+/* Estilo do botão processar */
+#botao-processar {
+    background-color: #00c3ff;
+    color: #000;
+    font-weight: bold;
+    border: none;
+    border-radius: 6px;
+    padding: 10px 24px;
+    cursor: pointer;
+    margin-top: 10px;
+    display: block;
+    width: fit-content;
+}
+
+/* Centraliza o botão dentro do container */
+.botao-wrapper {
+    display: flex;
+    justify-content: flex-start;  /* use 'center' se quiser centralizar */
+    width: 100%;
+}
+/* ⬆️ Topo externo com alinhamento central */
+.topbar-externa {
+    width: 100%;
+    background-color: #0f1a26;
+    padding-top: 20px;
+    padding-bottom: 10px;
+    display: flex;
+    justify-content: center;
+}
+
+/* ⬛ Container interno com largura igual à dos filtros */
+.topbar-inner {
+    width: 800px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+/* 🤝 Logo + texto juntos */
+.logo-wrapper {
+    display: flex;
+    align-items: center;
+}
+
+.logo-icon {
+    max-height: 100px;
+    margin-right: 12px;
+}
+
+.logo-text {
+    font-size: 36px;
+    font-weight: bold;
+    color: #d7f5ec;
+}

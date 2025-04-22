@@ -1,0 +1,66 @@
+.hub-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 40px;
+    color: white;
+}
+
+.hub-title {
+    font-size: 32px;
+    font-weight: bold;
+    margin-bottom: 50px;
+    color: #00f7ff;
+    text-shadow: 0 0 10px #00f7ff;
+}
+
+.hub-orbit {
+    position: relative;
+    width: 500px;
+    height: 500px;
+}
+
+.center-cube {
+    width: 100px;
+    height: 100px;
+    background: radial-gradient(circle, #00c3ff, #0f1a26);
+    border-radius: 16px;
+    box-shadow: 0 0 30px #00f7ff;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+}
+
+.hub-button {
+    display: block;
+    text-align: center;
+    color: #00f7ff;
+    background-color: #111d2f;
+    border: 2px solid #00f7ff;
+    border-radius: 10px;
+    padding: 10px 14px;
+    text-decoration: none;
+    box-shadow: 0 0 10px #00f7ff;
+    transition: transform 0.2s ease;
+}
+
+.hub-button:hover {
+    transform: scale(1.1);
+    background-color: #00f7ff;
+    color: #0f1a26;
+}
+
+/* Orb positions - in círculo */
+.orb {
+    position: absolute;
+}
+
+.orb-1 { top: 0%; left: 50%; transform: translate(-50%, 0); }
+.orb-2 { top: 15%; left: 85%; transform: translate(-50%, -50%); }
+.orb-3 { top: 50%; left: 100%; transform: translate(-50%, -50%); }
+.orb-4 { top: 85%; left: 85%; transform: translate(-50%, -50%); }
+.orb-5 { top: 100%; left: 50%; transform: translate(-50%, -100%); }
+.orb-6 { top: 85%; left: 15%; transform: translate(-50%, -50%); }
+.orb-7 { top: 50%; left: 0%; transform: translate(-50%, -50%); }
+.orb-8 { top: 15%; left: 15%; transform: translate(-50%, -50%); }
