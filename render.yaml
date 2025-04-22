@@ -1,0 +1,9 @@
+services:
+  - type: web
+    name: allspark-otdr
+    env: python
+    buildCommand: ""
+    startCommand: gunicorn app:server
+    envVars:
+      - key: PYTHON_VERSION
+        value: "3.10"
