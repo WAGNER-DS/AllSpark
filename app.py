@@ -8,6 +8,7 @@ from flask import Flask
 from core.session import user_session
 from core.login_callbacks import registrar_login_callbacks
 from apps.app_otdr_view.callbacks import registrar_callbacks
+from utils.logger import inicializar_db
 
 # Páginas
 from pages import login, hub, not_found
@@ -18,6 +19,8 @@ app = dash.Dash(__name__, server=server, suppress_callback_exceptions=True)
 # Registra callbacks
 registrar_login_callbacks(app)
 registrar_callbacks(app)
+
+inicializar_db()
 
 # Layout principal com Store persistente
 app.layout = html.Div([
