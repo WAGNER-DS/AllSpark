@@ -221,7 +221,7 @@ def registrar_callbacks(app):
             popup=folium.Popup(popup_html, max_width=300),
             icon=folium.Icon(icon="glyphicon glyphicon-screenshot", color="blue")
         ).add_to(mapa)
-
+        ponto_cto = (lat, lon)
 
         if os.path.exists(caminho_tracados):
             df_tracados = pd.read_csv(caminho_tracados, sep='|')
@@ -333,7 +333,7 @@ def registrar_callbacks(app):
 
         lat_eq_final_cto = float(str(linha_final_cto["LATITUDE_EQUP_FINAL"]).replace(",", "."))
         lon_eq_final_cto = float(str(linha_final_cto["LONGITUDE_EQUP_FINAL"]).replace(",", "."))
-        ponto_cto = (lat_eq_final_cto, lon_eq_final_cto)
+        #ponto_cto = (lat_eq_final_cto, lon_eq_final_cto)
         # Visualização no Streamlit
             
         df_sec["SEQUENCIAMENTO_DO_ENCAMINHAMENTO"] = pd.to_numeric(df_sec["SEQUENCIAMENTO_DO_ENCAMINHAMENTO"], errors='coerce')
@@ -684,7 +684,7 @@ def registrar_callbacks(app):
         # Desenho interativo com Folium
         Draw(export=True, filename='meu_desenho.geojson').add_to(mapa)
         Fullscreen(position="topright").add_to(mapa)
-        LayerControl(collapsed=True).add_to(mapa)
+        LayerControl(collapsed=False).add_to(mapa)
         # Depois de criar o mapa
         LocateControl(auto_start=False).add_to(mapa)
 
