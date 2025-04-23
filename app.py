@@ -103,7 +103,9 @@ def roteador(pathname, session_data):
     elif pathname == "/app_otdr_view":
         from apps.app_otdr_view.layout import layout as app_otdr_view_layout
         return app_otdr_view_layout(session_data)
-
+    elif pathname == "/app_otdr_logs":
+        from apps.app_otdr_view.logs import layout as logs_layout
+        return logs_layout(session_data)
     return not_found.layout()
 
 # Executa
