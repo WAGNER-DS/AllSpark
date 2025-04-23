@@ -683,9 +683,32 @@ def registrar_callbacks(app):
         #folium.LayerControl(collapsed=False).add_to(mapa)
         #Fullscreen().add_to(mapa)
 
-        map_html = mapa._repr_html_()
+                from bs4 import BeautifulSoup
 
-        # 🔧 Corrigir o CSS do estilo inline (ajuste do container externo)
+        def ajustar_folium_html_responsivo(html_original):
+            soup = BeautifulSoup(html_original, "html.parser")
+
+            # Força height 100% em todos os níveis
+            style_tag = soup.new_tag("style")
+            style_tag.string = """
+            html, body, #map, .folium-map, .leaflet-container {
+                width: 100% !important;
+                height: 100% !important;
+                margin: 0;
+                padding: 0;
+            }
+            """
+            if soup.head:
+                soup.head.append(style_tag)
+
+            return str(soup)
+
+
+        # Gerar HTML e aplicar ajustes
+        map_html = mapa._repr_html_()
+        map_html = ajustar_folium_html_responsivo(map_html)
+
+        # Ajuste de container externo se ainda necessário
         map_html = map_html.replace(
             'style="width:100.0%; height:100.0%;"',
             'style="width:100%; height:100%; position:absolute; top:0; bottom:0; right:0; left:0;"'
@@ -695,29 +718,7 @@ def registrar_callbacks(app):
             '<div style="position:relative; width:100%; height:100%; min-height:400px;">'
         )
 
-        # ✅ Injeção de CSS adicional para forçar altura total do conteúdo interno (folium-map, leaflet-container)
-        style_patch = """
-        <style>
-            html, body {
-                margin: 0;
-                height: 100%;
-            }
-            #map {
-                height: 100% !important;
-            }
-            .folium-map {
-                height: 100% !important;
-                width: 100% !important;
-            }
-            .leaflet-container {
-                height: 100% !important;
-                width: 100% !important;
-            }
-        </style>
-        """
-        map_html = map_html.replace("</head>", style_patch + "</head>")  # ⬅️ injeta no <head> antes de fechar
-
-        # ⬇️ Componente visual
+        # Renderizar no iframe responsivo
         map_component = html.Iframe(
             srcDoc=map_html,
             style={
@@ -728,8 +729,6 @@ def registrar_callbacks(app):
                 "marginTop": "20px"
             }
         )
-
-
 
 
         return html.Div([
