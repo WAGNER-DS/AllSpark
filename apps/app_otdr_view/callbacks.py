@@ -684,13 +684,23 @@ def registrar_callbacks(app):
         #Fullscreen().add_to(mapa)
 
         map_html = mapa._repr_html_()
+
+        # 🔧 Corrigir o CSS para que o mapa ocupe 100% do iframe em qualquer dispositivo
+        map_html = map_html.replace(
+            'style="width:100.0%; height:100.0%;"',
+            'style="width:100%; height:100%; position:absolute; top:0; bottom:0; right:0; left:0;"'
+        )
+        map_html = map_html.replace(
+            '<div style="position:relative; width:100.0%; height:100.0%;">',
+            '<div style="position:relative; width:100%; height:100%; min-height:400px;">'
+        )
+
         map_component = html.Iframe(
             srcDoc=map_html,
             style={
                 "width": "100%",
                 "height": "80vh",  # já está bom para desktop
                 "minHeight": "400px",  # ⬅️ garante que mesmo em celular tenha altura mínima
-                "maxWidth": "100%",    # ⬅️ força o mapa a respeitar a largura da tela
                 "border": "2px solid #ccc",
                 "marginTop": "20px"
             }
