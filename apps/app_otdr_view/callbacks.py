@@ -707,26 +707,37 @@ def registrar_callbacks(app):
 
         map_html = mapa._repr_html_()
 
-        # Hack de força bruta para garantir altura fixa no container principal do mapa
+        # Corrigir a estrutura do container do mapa para altura real
         map_html = map_html.replace(
             'style="width:100.0%; height:100.0%;"',
-            'style="width:100%; height:600px;"'
+            'style="width:100%; height:100%;"'
         ).replace(
-            'height:100.0%;',
-            'height:600px;'
+            'position:relative; width:100.0%; height:100.0%',
+            'position:relative; width:100%; height:100%; min-height:600px;'
+        ).replace(
+            '<body>',
+            '''<body style="margin:0;height:100%">
+            <style>
+                html, body, #map, .folium-map, .leaflet-container {
+                    width: 100% !important;
+                    height: 100% !important;
+                    margin: 0 !important;
+                    padding: 0 !important;
+                }
+            </style>
+            '''
         )
 
-
-
-        map_component = html.Div(
-            dangerouslySetInnerHTML={"__html": map_html},
+        map_component = html.Iframe(
+            srcDoc=map_html,
             style={
                 "width": "100%",
-                "minHeight": "600px",
-                "marginTop": "20px",
-                "overflow": "hidden"
+                "height": "600px",  # altura fixa visível
+                "border": "2px solid #ccc",
+                "marginTop": "20px"
             }
         )
+
 
 
         return html.Div([
