@@ -10,6 +10,7 @@ from folium import LayerControl
 from folium.plugins import LocateControl
 from dash import Input, Output, State, html
 from bs4 import BeautifulSoup
+from core.session import user_session
 
 # 🔒 Caminho absoluto para o CSV de cidades
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -626,6 +627,22 @@ def registrar_callbacks(app):
         if distancia_otdr and distancia_otdr.isdigit():
             distancia_otdr_metros = int(distancia_otdr)
             ponto_falha = encontrar_ponto_por_distancia(caminho_reverso, distancia_otdr_metros)
+            # 🔍 Coleta IP e registra a consulta
+            lat_falha, lon_falha = ponto_falha if ponto_falha else (None, None)
+            ip_usuario = get_user_ip()
+
+            registrar_consulta(
+                user=user_session.get("user"),
+                ip=ip_usuario,
+                uf=uf,
+                municipio=municipio,
+                cto=cto,
+                distancia_otdr=distancia_otdr,
+                lat_cto=lat,
+                lon_cto=lon,
+                lat_falha=lat_falha,
+                lon_falha=lon_falha
+            )
 
             # 🔶 Camada reversa (CTO → ponto de falha)
             camada_falha = folium.FeatureGroup(name="Falha OTDR (CTO → OLT)", show=True)
