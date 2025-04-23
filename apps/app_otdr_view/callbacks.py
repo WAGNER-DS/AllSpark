@@ -684,9 +684,9 @@ def registrar_callbacks(app):
         # Desenho interativo com Folium
         Draw(export=True, filename='meu_desenho.geojson').add_to(mapa)
         Fullscreen(position="topright").add_to(mapa)
-        LayerControl(collapsed=False).add_to(mapa)
+        LayerControl(collapsed=True).add_to(mapa)
         # Depois de criar o mapa
-        LocateControl(auto_start=False).add_to(mapa)
+        LocateControl(auto_start=True).add_to(mapa)
 
 
 
