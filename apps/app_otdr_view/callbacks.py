@@ -732,12 +732,12 @@ def registrar_callbacks(app):
             srcDoc=map_html,
             style={
                 "width": "100%",
-                "height": "600px",  # altura fixa visível
+                "height": "600px",
                 "border": "2px solid #ccc",
                 "marginTop": "20px"
             }
+            
         )
-
 
 
         return html.Div([
