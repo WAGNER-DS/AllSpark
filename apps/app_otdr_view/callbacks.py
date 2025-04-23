@@ -705,19 +705,19 @@ def registrar_callbacks(app):
             return str(soup)
 
 
-        # Gerar HTML e aplicar ajustes
         map_html = mapa._repr_html_()
-        map_html = ajustar_folium_html_responsivo(map_html)
 
-        # Ajuste de container externo se ainda necessário
+        # Substitui o estilo principal do div que envolve o mapa
         map_html = map_html.replace(
             'style="width:100.0%; height:100.0%;"',
-            'style="width:100%; height:100%; position:absolute; top:0; bottom:0; right:0; left:0;"'
+            'style="width:100%; height:100%; min-height:600px;"'
         )
+
         map_html = map_html.replace(
             '<div style="position:relative; width:100.0%; height:100.0%;">',
-            '<div style="position:relative; width:100%; height:100%; min-height:400px;">'
+            '<div style="position:relative; width:100%; height:100%; min-height:600px;">'
         )
+
 
         # Renderizar no iframe responsivo
         map_component = html.Iframe(
@@ -730,7 +730,6 @@ def registrar_callbacks(app):
                 "marginTop": "20px"
             }
         )
-
 
         return html.Div([
             html.Hr(),
