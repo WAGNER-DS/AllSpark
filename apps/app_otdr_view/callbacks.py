@@ -561,9 +561,6 @@ def registrar_callbacks(app):
         linha_primario_ordenada = [(lat, lon) for lat, lon in pontos_ordenados]
 
 
-        # Visualização no Streamlit
-        #with st.expander("📍 SEQ PRI"):
-        #    st.write(f"Ponto Armario: {linha_primario_ordenada}")
         
         
 
@@ -590,14 +587,6 @@ def registrar_callbacks(app):
         else:
             caminho_total = caminho_primario + linha_secundaria_ordenada
         
-        # (opcional) debug visual no Streamlit
-        #with st.expander("📍 Join Pri+SEC"):
-        #    st.write(f"Secundario 0: {linha_secundaria_ordenada[0]}")
-        #    st.write(f"Secundario 0: {linha_secundaria_ordenada[-1]}")
-        #    st.write(f"Primario 0: {caminho_primario[0]}")
-        #    st.write(f"Primario 0: {caminho_primario[-1]}")
-        #    st.write(f"total 0: {caminho_total[0]}")
-        #    st.write(f"total 0: {caminho_total[-1]}")
             
         # Criar camada única com o caminho completo OLT → CTO
         camada_total = folium.FeatureGroup(name="Caminho OTDR (OLT → CTO)", show=False)
@@ -684,7 +673,7 @@ def registrar_callbacks(app):
         # Desenho interativo com Folium
         Draw(export=True, filename='meu_desenho.geojson').add_to(mapa)
         Fullscreen(position="topright").add_to(mapa)
-        LayerControl(collapsed=False).add_to(mapa)
+        LayerControl(collapsed=True).add_to(mapa)
         # Depois de criar o mapa
         LocateControl(auto_start=False).add_to(mapa)
 
