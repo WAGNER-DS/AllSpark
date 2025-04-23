@@ -1,6 +1,8 @@
+# utils/logger.py
 import os
 import sqlite3
 from datetime import datetime
+import pytz
 
 # Caminho para o arquivo do banco de dados SQLite
 DB_PATH = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "logs", "otdr_consultas.db"))
@@ -46,6 +48,10 @@ def registrar_consulta(
     """
     Insere uma nova linha na tabela de consultas OTDR.
     """
+    # 📅 Corrige o fuso horário para o Brasil
+    tz = pytz.timezone("America/Sao_Paulo")
+    timestamp = datetime.now(tz).strftime("%Y-%m-%d %H:%M:%S")
+
     conn = sqlite3.connect(DB_PATH)
     cursor = conn.cursor()
     cursor.execute("""
@@ -54,7 +60,7 @@ def registrar_consulta(
             lat_cto, lon_cto, lat_falha, lon_falha
         ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     """, (
-        datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+        timestamp,
         user or "desconhecido",
         ip or "indefinido",
         uf,
