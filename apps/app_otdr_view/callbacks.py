@@ -9,8 +9,18 @@ from geopy.distance import geodesic
 from folium import LayerControl
 from folium.plugins import LocateControl
 from dash import Input, Output, State, html
-from bs4 import BeautifulSoup
+from utils.logger import inicializar_db, registrar_consulta
+from flask import request
 from core.session import user_session
+
+
+def get_user_ip():
+    try:
+        return request.headers.get('X-Forwarded-For', request.remote_addr)
+    except Exception:
+        return "unknown"
+
+
 
 # 🔒 Caminho absoluto para o CSV de cidades
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -434,13 +444,7 @@ def registrar_callbacks(app):
         pontos_ordenados = [p for p in linha_secundaria_ordenada["PONTO INICIAL_NORMALIZADO"]] +                    [linha_secundaria_ordenada.iloc[-1]["PONTO FINAL_NORMALIZADO"]]
         linha_secundaria_ordenada = [(lat, lon) for lat, lon in pontos_ordenados]
         
-        # Visualização no Streamlit
-        #with st.expander("📍 Caminho Secundario (OLT → CEOS)"):
-        #    st.write(f"Início: {linha_secundaria_ordenada[0]}")
-        #    st.write(f"Fim: {linha_secundaria_ordenada[-1]}")
-        #    st.write(f"Ponto CTO: {ponto_cto}")
-        #    st.code(linha_secundaria_ordenada)
-
+        
         # Adicionar ao mapa Folium
         camada_ordenada = folium.FeatureGroup(name="Caminho Secundário (CEOS → CTO)", show=False)
         folium.PolyLine(
@@ -487,9 +491,6 @@ def registrar_callbacks(app):
         lat_eq_final_armario = float(str(linha_inicial_arm["LATITUDE_EQUP_INICIAL"]).replace(",", "."))
         lon_eq_final_armario = float(str(linha_inicial_arm["LONGITUDE_EQUP_INICIAL"]).replace(",", "."))
         ponto_armario = (lat_eq_final_armario, lon_eq_final_armario)
-        # Visualização no Streamlit
-        #with st.expander("📍 Ponto do Armario"):
-        #    st.write(f"Ponto Armario: {ponto_armario}")
         
 
         def normalizar_sequenciamento_prmario(df, ponto_inicial, setagem_inicio=1):
@@ -601,19 +602,6 @@ def registrar_callbacks(app):
             tooltip="Caminho Total OTDR (Primário + Secundário)"
         ).add_to(camada_total)
 
-        # Marcadores de início e fim
-        #folium.Marker(
-        #    location=caminho_total[0],
-        #    tooltip="🔵 Início (OLT)",
-        #    icon=folium.Icon(color='green')
-        #).add_to(camada_total)
-
-        #folium.Marker(
-        #    location=caminho_total[-1],
-        #    tooltip="🔴 Fim (CTO)",
-        #    icon=folium.Icon(color='red')
-        #).add_to(camada_total)
-
         # Adicionar ao mapa
         camada_total.add_to(mapa)
 
@@ -695,13 +683,7 @@ def registrar_callbacks(app):
         # Depois de criar o mapa
         LocateControl(auto_start=False).add_to(mapa)
 
-
-
-
-        #folium.LayerControl(collapsed=False).add_to(mapa)
-        #Fullscreen().add_to(mapa)
-
-        
+        from bs4 import BeautifulSoup
 
         def ajustar_folium_html_responsivo(html_original):
             soup = BeautifulSoup(html_original, "html.parser")
@@ -755,6 +737,12 @@ def registrar_callbacks(app):
             }
             
         )
+
+
+
+
+
+
 
 
         return html.Div([
