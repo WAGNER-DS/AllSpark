@@ -718,17 +718,16 @@ def registrar_callbacks(app):
 
 
 
-        # Renderizar no iframe responsivo
-        map_component = html.Iframe(
-            srcDoc=map_html,
+        map_component = html.Div(
+            dangerouslySetInnerHTML={"__html": map_html},
             style={
                 "width": "100%",
-                "height": "80vh",
-                "minHeight": "400px",
-                "border": "2px solid #ccc",
-                "marginTop": "20px"
+                "minHeight": "600px",
+                "marginTop": "20px",
+                "overflow": "hidden"
             }
         )
+
 
         return html.Div([
             html.Hr(),
