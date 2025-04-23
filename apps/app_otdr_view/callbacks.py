@@ -707,16 +707,15 @@ def registrar_callbacks(app):
 
         map_html = mapa._repr_html_()
 
-        # Substitui o estilo principal do div que envolve o mapa
+        # Hack de força bruta para garantir altura fixa no container principal do mapa
         map_html = map_html.replace(
             'style="width:100.0%; height:100.0%;"',
-            'style="width:100%; height:100%; min-height:600px;"'
+            'style="width:100%; height:600px;"'
+        ).replace(
+            'height:100.0%;',
+            'height:600px;'
         )
 
-        map_html = map_html.replace(
-            '<div style="position:relative; width:100.0%; height:100.0%;">',
-            '<div style="position:relative; width:100%; height:100%; min-height:600px;">'
-        )
 
 
         # Renderizar no iframe responsivo
