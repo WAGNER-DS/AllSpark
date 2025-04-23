@@ -688,7 +688,9 @@ def registrar_callbacks(app):
             srcDoc=map_html,
             style={
                 "width": "100%",
-                "height": "80vh",  # altura relativa à viewport
+                "height": "80vh",  # já está bom para desktop
+                "minHeight": "400px",  # ⬅️ garante que mesmo em celular tenha altura mínima
+                "maxWidth": "100%",    # ⬅️ força o mapa a respeitar a largura da tela
                 "border": "2px solid #ccc",
                 "marginTop": "20px"
             }
