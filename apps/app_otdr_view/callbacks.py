@@ -835,6 +835,34 @@ def registrar_callbacks(app):
                 ], style={"textAlign": "center", "marginTop": "20px"}),
         ]), map_html
 
+    import sqlite3
+    from dash import dcc  # já deve ter no início, mas caso não, pode deixar
+
+    @app.callback(
+        Output("output-logs", "children"),
+        Input("botao-ver-logs", "n_clicks"),
+        prevent_initial_call=True
+    )
+    def mostrar_logs(n):
+        try:
+            import os
+
+            BASE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
+            DB_PATH = os.path.join(BASE_DIR, "logs", "otdr_consultas.db")
+            print("📂 Usando banco em:", DB_PATH)
+
+            con = sqlite3.connect(DB_PATH)
+
+            df = pd.read_sql("SELECT * FROM consultas_otdr ORDER BY timestamp DESC LIMIT 100", con)
+            con.close()
+
+            return html.Div([
+                html.H4("📜 Últimas Consultas Registradas", style={"marginTop": "20px", "color": "#00ffaa"}),
+                dcc.Loading(dcc.Markdown(df.to_markdown(index=False)), type="circle")
+            ], style={"backgroundColor": "#222", "padding": "20px", "borderRadius": "10px", "color": "white"})
+        except Exception as e:
+            return html.Div(f"Erro ao carregar logs: {e}", style={"color": "red"})
+
 
     # 🔄 Callback para baixar o mapa HTML da memória da sessão
     from dash import dcc
