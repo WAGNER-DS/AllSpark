@@ -685,7 +685,7 @@ def registrar_callbacks(app):
 
         map_html = mapa._repr_html_()
 
-        # 🔧 Corrigir o CSS para que o mapa ocupe 100% do iframe em qualquer dispositivo
+        # 🔧 Corrigir o CSS do estilo inline (ajuste do container externo)
         map_html = map_html.replace(
             'style="width:100.0%; height:100.0%;"',
             'style="width:100%; height:100%; position:absolute; top:0; bottom:0; right:0; left:0;"'
@@ -695,16 +695,41 @@ def registrar_callbacks(app):
             '<div style="position:relative; width:100%; height:100%; min-height:400px;">'
         )
 
+        # ✅ Injeção de CSS adicional para forçar altura total do conteúdo interno (folium-map, leaflet-container)
+        style_patch = """
+        <style>
+            html, body {
+                margin: 0;
+                height: 100%;
+            }
+            #map {
+                height: 100% !important;
+            }
+            .folium-map {
+                height: 100% !important;
+                width: 100% !important;
+            }
+            .leaflet-container {
+                height: 100% !important;
+                width: 100% !important;
+            }
+        </style>
+        """
+        map_html = map_html.replace("</head>", style_patch + "</head>")  # ⬅️ injeta no <head> antes de fechar
+
+        # ⬇️ Componente visual
         map_component = html.Iframe(
             srcDoc=map_html,
             style={
                 "width": "100%",
-                "height": "80vh",  # já está bom para desktop
-                "minHeight": "400px",  # ⬅️ garante que mesmo em celular tenha altura mínima
+                "height": "80vh",
+                "minHeight": "400px",
                 "border": "2px solid #ccc",
                 "marginTop": "20px"
             }
         )
+
+
 
 
         return html.Div([
