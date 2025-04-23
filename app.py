@@ -20,7 +20,8 @@ app = dash.Dash(__name__, server=server, suppress_callback_exceptions=True)
 registrar_login_callbacks(app)
 registrar_callbacks(app)
 
-inicializar_db()
+inicializar_db()  # 🔹 Inicializa o banco de log OTDR
+
 
 # Layout principal com Store persistente
 app.layout = html.Div([
@@ -107,4 +108,5 @@ def roteador(pathname, session_data):
 
 # Executa
 if __name__ == "__main__":
-    app.run(debug=True, host="0.0.0.0", port=8050)
+    app.run(debug=True)
+    #app.run(debug=True, host="0.0.0.0", port=8050)
