@@ -9,6 +9,7 @@ from geopy.distance import geodesic
 from folium import LayerControl
 from folium.plugins import LocateControl
 from dash import Input, Output, State, html
+from bs4 import BeautifulSoup
 
 # 🔒 Caminho absoluto para o CSV de cidades
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -683,7 +684,7 @@ def registrar_callbacks(app):
         #folium.LayerControl(collapsed=False).add_to(mapa)
         #Fullscreen().add_to(mapa)
 
-                from bs4 import BeautifulSoup
+        
 
         def ajustar_folium_html_responsivo(html_original):
             soup = BeautifulSoup(html_original, "html.parser")
