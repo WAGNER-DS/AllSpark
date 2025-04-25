@@ -1,19 +1,22 @@
-# utils/logger.py
 import os
 import psycopg2
 from datetime import datetime
 import pytz
 
+# Pega a URL do banco do ambiente
 DATABASE_URL = os.getenv("DATABASE_URL")
 
 def inicializar_db():
+    """
+    Cria a tabela de logs de consultas OTDR, caso ainda não exista.
+    """
     conn = psycopg2.connect(DATABASE_URL)
     cursor = conn.cursor()
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS consultas_otdr (
             id SERIAL PRIMARY KEY,
-            timestamp TEXT,
-            user TEXT,
+            "timestamp" TEXT,
+            "user" TEXT,
             ip TEXT,
             uf TEXT,
             municipio TEXT,
@@ -40,6 +43,10 @@ def registrar_consulta(
     lat_falha=None,
     lon_falha=None
 ):
+    """
+    Insere uma nova linha na tabela de consultas OTDR.
+    """
+    # Corrige fuso horário para o Brasil
     tz = pytz.timezone("America/Sao_Paulo")
     timestamp = datetime.now(tz).strftime("%Y-%m-%d %H:%M:%S")
 
@@ -47,7 +54,7 @@ def registrar_consulta(
     cursor = conn.cursor()
     cursor.execute("""
         INSERT INTO consultas_otdr (
-            timestamp, user, ip, uf, municipio, cto, distancia_otdr,
+            "timestamp", "user", ip, uf, municipio, cto, distancia_otdr,
             lat_cto, lon_cto, lat_falha, lon_falha
         ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
     """, (
