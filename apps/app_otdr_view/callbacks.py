@@ -1,18 +1,27 @@
 #apps/app_otdr_view/callbacks.py
 #apps/app_otdr_view/callbacks.py
-#apps/app_otdr_view/callbacks.py
+
 import os
 import pandas as pd
 import folium
-from folium.plugins import Draw, Fullscreen
-from geopy.distance import geodesic
+from folium.plugins import Draw, Fullscreen, LocateControl
 from folium import LayerControl
-from folium.plugins import LocateControl
-from dash import Input, Output, State, html
-from utils.logger import inicializar_db, registrar_consulta
+from geopy.distance import geodesic
+from dash import Input, Output, State, html, dcc
 from flask import request
+from utils.logger import inicializar_db, registrar_consulta
 from core.session import user_session
+import sqlite3
+from io import BytesIO
+import datetime
+import dash
+    
 
+# Caminho para o CSV de cidades
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+CIDADES_PATH = os.path.abspath(os.path.join(BASE_DIR, "..", "..", "data", "cidades.csv"))
+
+# Função auxiliar para capturar o IP
 
 def get_user_ip():
     try:
@@ -20,15 +29,14 @@ def get_user_ip():
     except Exception:
         return "unknown"
 
+# Funções auxiliares: encontrar ponto por distância, deslocar linhas, normalizar sequências, etc.
+# (Essas funções serão usadas na lógica de processamento do mapa)
 
-
-# 🔒 Caminho absoluto para o CSV de cidades
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-CIDADES_PATH = os.path.abspath(os.path.join(BASE_DIR, "..", "..", "data", "cidades.csv"))
+# Função principal para registrar os callbacks
 
 def registrar_callbacks(app):
 
-    # 📌 1. Preenche a lista de UFs quando o dropdown-uf aparece na tela
+    # 📌 1. Carregar UFs
     @app.callback(
         Output("dropdown-uf", "options"),
         Input("dropdown-uf", "id")
@@ -36,13 +44,11 @@ def registrar_callbacks(app):
     def carregar_ufs(_):
         try:
             df_cidades = pd.read_csv(CIDADES_PATH, sep=";")
-            print("✅ UFs carregadas:", df_cidades["UF"].unique())
             return [{"label": uf, "value": uf} for uf in sorted(df_cidades["UF"].dropna().unique())]
         except Exception as e:
-            print(f"⚠️ Erro ao carregar CSV de cidades (UFs): {e}")
             return []
 
-    # 📌 2. UF → Municípios
+    # 📌 2. Atualizar Municípios
     @app.callback(
         Output("dropdown-municipio", "options"),
         Input("dropdown-uf", "value")
@@ -55,10 +61,9 @@ def registrar_callbacks(app):
             municipios = df_cidades[df_cidades["UF"] == uf]["MUNICIPIO"].dropna().unique()
             return [{"label": m, "value": m} for m in sorted(municipios)]
         except Exception as e:
-            print(f"⚠️ Erro ao carregar municípios para UF '{uf}': {e}")
             return []
 
-    # 📌 3. Município → CTOs
+    # 📌 3. Atualizar CTOs
     @app.callback(
         Output("dropdown-cto", "options"),
         Input("dropdown-municipio", "value")
@@ -74,13 +79,36 @@ def registrar_callbacks(app):
             df_cto = pd.read_csv(caminho_cto, sep=";")
             return [{"label": cto, "value": cto} for cto in sorted(df_cto["CTO_NAME"].dropna().unique())]
         except Exception as e:
-            print(f"⚠️ Erro ao carregar CTOs para município '{municipio}': {e}")
             return []
 
-    # 📌 4. Botão Processar → cálculo e visualização com mapa
+    # 🔄 4. Limpar resultado e mapa se trocar UF, Município, CTO ou clicar Processar sem preencher
     @app.callback(
         Output("output-info-cto", "children"),
         Output("mapa-html-store", "data"),
+        Input("dropdown-uf", "value"),
+        Input("dropdown-municipio", "value"),
+        Input("dropdown-cto", "value"),
+        Input("botao-processar", "n_clicks"),
+        State("dropdown-uf", "value"),
+        State("dropdown-municipio", "value"),
+        State("dropdown-cto", "value"),
+        prevent_initial_call=True
+    )
+    def limpar_tela_ao_mudar(uf, municipio, cto, n_clicks, uf_state, municipio_state, cto_state):
+        triggered_id = dash.callback_context.triggered_id
+
+        if triggered_id == "botao-processar" and not all([uf_state, municipio_state, cto_state]):
+            return None, None
+
+        if triggered_id in ["dropdown-uf", "dropdown-municipio", "dropdown-cto"]:
+            return None, None
+
+        return dash.no_update, dash.no_update
+
+    # 📌 5. Botão Processar -> gera o mapa
+    @app.callback(
+        Output("output-info-cto", "children", allow_duplicate=True),
+        Output("mapa-html-store", "data", allow_duplicate=True),
         Input("botao-processar", "n_clicks"),
         State("dropdown-uf", "value"),
         State("dropdown-municipio", "value"),
