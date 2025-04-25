@@ -1,7 +1,8 @@
 # apps/app_otdr_view/logs.py
 from dash import html, dcc, dash_table
 import pandas as pd
-import sqlite3
+from sqlalchemy import create_engine
+import os
 
 def layout(session_data=None):
     perfil_id = session_data.get("perfil_id") if session_data else None
@@ -9,9 +10,12 @@ def layout(session_data=None):
         return html.Div("🔒 Acesso restrito a administradores.", style={"color": "red", "padding": "40px"})
 
     try:
-        con = sqlite3.connect("logs/otdr_consultas.db")
-        df = pd.read_sql("SELECT * FROM consultas_otdr ORDER BY timestamp DESC LIMIT 200", con)
-        con.close()
+        # Conectar ao PostgreSQL com SQLAlchemy
+        db_url = os.getenv("DATABASE_URL")
+        engine = create_engine(db_url)
+
+        # Ler os dados
+        df = pd.read_sql("SELECT * FROM consultas_otdr ORDER BY timestamp DESC LIMIT 200", engine)
 
         return html.Div([
             html.H3("📜 Logs de Consultas OTDR", style={"color": "#00ffaa", "marginBottom": "20px"}),
