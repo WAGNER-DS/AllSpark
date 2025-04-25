@@ -105,13 +105,49 @@ def registrar_callbacks(app):
         df_cto = df_cto[df_cto["CTO_NAME"] == cto]
         uid_cto = df_cto.iloc[0]["UID_EQUIP"]
         cto_nome = df_cto.iloc[0]["CTO_NAME"]
+        
         sec_filtrado = pd.DataFrame()
         prim_filtrado = pd.DataFrame()
         if os.path.exists(caminho_secundarios):
             df_sec = pd.read_csv(caminho_secundarios, sep='|')
-            sec_filtrado = df_sec[df_sec["UID_EQUIPAMENTO_Z"] == uid_cto]
-            distancia_secundario = sec_filtrado["COMPRIMENTO_GEOMETRICO"].sum()
+
+            # Primeira tentativa: buscar no UID_EQUIPAMENTO_Z
+            # Primeira tentativa: buscar no UID_EQUIPAMENTO_Z
+            sec_filtrado = df_sec[df_sec["UID_EQUIPAMENTO_Z"] == uid_cto].copy()
+
+            if sec_filtrado.empty:
+                # Tentar encontrar no UID_EQUIPAMENTO_A
+                sec_filtrado = df_sec[df_sec["UID_EQUIPAMENTO_A"] == uid_cto].copy()
+                # Agora pode usar normalmente:
+            
+                if not sec_filtrado.empty:
+                    # Realizar a inversão das colunas
+                    sec_filtrado.rename(columns={
+                        "UID_EQUIPAMENTO_A": "temp_uid",
+                        "UID_EQUIPAMENTO_Z": "UID_EQUIPAMENTO_A",
+                        "temp_uid": "UID_EQUIPAMENTO_Z",
+                        
+                        "EQUIPAMENTO_A": "temp_eq",
+                        "EQUIPAMENTO_Z": "EQUIPAMENTO_A",
+                        "temp_eq": "EQUIPAMENTO_Z",
+                        
+                        "NOME_EQUIPAMENTO_1": "temp_nome1",
+                        "NOME_EQUIPAMENTO_2": "NOME_EQUIPAMENTO_1",
+                        "temp_nome1": "NOME_EQUIPAMENTO_2",
+                        
+                        "EQUIPAMENTO_1": "temp_eq1",
+                        "UID_EQUIPAMENTO_2": "EQUIPAMENTO_1",
+                        "temp_eq1": "UID_EQUIPAMENTO_2"
+                    }, inplace=True)
+                distancia_secundario = sec_filtrado["COMPRIMENTO_GEOMETRICO"].sum()
             uid_ceos = sec_filtrado["UID_EQUIPAMENTO_A"].unique().tolist()
+        print(uid_ceos)
+        #if os.path.exists(caminho_secundarios):
+        #    df_sec = pd.read_csv(caminho_secundarios, sep='|')
+        #    sec_filtrado = df_sec[df_sec["UID_EQUIPAMENTO_Z"] == uid_cto]
+        #    distancia_secundario = sec_filtrado["COMPRIMENTO_GEOMETRICO"].sum()
+        #    uid_ceos = sec_filtrado["UID_EQUIPAMENTO_A"].unique().tolist()
+
 
         if os.path.exists(caminho_primarios) and uid_ceos:
             df_prim = pd.read_csv(caminho_primarios, sep='|')
@@ -173,17 +209,50 @@ def registrar_callbacks(app):
         lat = float(str(info["LATITUDE"]).replace(",", ".")) if pd.notna(info["LATITUDE"]) else 0
         lon = float(str(info["LONGITUDE"]).replace(",", ".")) if pd.notna(info["LONGITUDE"]) else 0
 
-        distancia_sec = 0
         distancia_prim = 0
+        distancia_sec = 0
+        
         uid_ceos = []
         df_sec = pd.DataFrame()
         df_prim = pd.DataFrame()
 
         if os.path.exists(caminho_secundarios):
-            df_sec = pd.read_csv(caminho_secundarios, sep="|")
-            df_sec = df_sec[df_sec["UID_EQUIPAMENTO_Z"] == uid_cto]
-            distancia_sec = df_sec["COMPRIMENTO_GEOMETRICO"].sum()
-            uid_ceos = df_sec["UID_EQUIPAMENTO_A"].dropna().unique().tolist()
+            df_sec = pd.read_csv(caminho_secundarios, sep='|')
+
+            # Primeira tentativa: buscar no UID_EQUIPAMENTO_Z
+            # Primeira tentativa: buscar no UID_EQUIPAMENTO_Z
+            sec_filtrado = df_sec[df_sec["UID_EQUIPAMENTO_Z"] == uid_cto].copy()
+
+            if sec_filtrado.empty:
+                # Tentar encontrar no UID_EQUIPAMENTO_A
+                sec_filtrado = df_sec[df_sec["UID_EQUIPAMENTO_A"] == uid_cto].copy()
+                # Agora pode usar normalmente:
+            
+                if not sec_filtrado.empty:
+                    # Realizar a inversão das colunas
+                    sec_filtrado.rename(columns={
+                        "UID_EQUIPAMENTO_A": "temp_uid",
+                        "UID_EQUIPAMENTO_Z": "UID_EQUIPAMENTO_A",
+                        "temp_uid": "UID_EQUIPAMENTO_Z",
+                        
+                        "EQUIPAMENTO_A": "temp_eq",
+                        "EQUIPAMENTO_Z": "EQUIPAMENTO_A",
+                        "temp_eq": "EQUIPAMENTO_Z",
+                        
+                        "NOME_EQUIPAMENTO_1": "temp_nome1",
+                        "NOME_EQUIPAMENTO_2": "NOME_EQUIPAMENTO_1",
+                        "temp_nome1": "NOME_EQUIPAMENTO_2",
+                        
+                        "EQUIPAMENTO_1": "temp_eq1",
+                        "UID_EQUIPAMENTO_2": "EQUIPAMENTO_1",
+                        "temp_eq1": "UID_EQUIPAMENTO_2"
+                    }, inplace=True)
+                distancia_sec = sec_filtrado["COMPRIMENTO_GEOMETRICO"].sum()
+            uid_ceos = sec_filtrado["UID_EQUIPAMENTO_A"].unique().tolist()
+    
+                    
+
+
 
         if os.path.exists(caminho_primarios) and uid_ceos:
             df_prim = pd.read_csv(caminho_primarios, sep="|")
@@ -195,7 +264,7 @@ def registrar_callbacks(app):
 
         distancia_total = distancia_sec + distancia_prim
         distancia_otdr = distancia_otdr if distancia_otdr else "N/A"
-
+        armario=info['ARMARIO']
         # Mapa Folium
         mapa = folium.Map(location=[lat, lon], zoom_start=17, control_scale=True)
         # 1. Não colocar nenhuma camada base com show=True
@@ -485,12 +554,25 @@ def registrar_callbacks(app):
         
         # Extrair ponto inicial da CTO
         #linha_inicial_cto = df_sec[df_sec["SEQUENCIAMENTO_DO_ENCAMINHAMENTO"] == sequenciamento_inicial].iloc[0]
-        sequenciamento_inicial = df_prim["SEQUENCIAMENTO_DO_ENCAMINHAMENTO"].min()
-        linha_inicial_arm = df_prim[df_prim["SEQUENCIAMENTO_DO_ENCAMINHAMENTO"] == sequenciamento_inicial].iloc[0]
+        sequenciamento_ordenado = df_prim.sort_values("SEQUENCIAMENTO_DO_ENCAMINHAMENTO")
 
-        lat_eq_final_armario = float(str(linha_inicial_arm["LATITUDE_EQUP_INICIAL"]).replace(",", "."))
-        lon_eq_final_armario = float(str(linha_inicial_arm["LONGITUDE_EQUP_INICIAL"]).replace(",", "."))
-        ponto_armario = (lat_eq_final_armario, lon_eq_final_armario)
+        linha_inicial_arm = None
+        for _, row in sequenciamento_ordenado.iterrows():
+            if row["LOCAL_TRACADO_INICIAL"] == armario:
+                lat_eq_final_armario = float(str(row["LATITUDE_INICIAL"]).replace(",", "."))
+                lon_eq_final_armario = float(str(row["LONGITUDE_INICIAL"]).replace(",", "."))
+                linha_inicial_arm = row
+                break
+            elif row["LOCAL_TRACADO_FINAL"] == armario:
+                lat_eq_final_armario = float(str(row["LATITUDE_FINAL"]).replace(",", "."))
+                lon_eq_final_armario = float(str(row["LONGITUDE_FINAL"]).replace(",", "."))
+                linha_inicial_arm = row
+                break
+
+        if linha_inicial_arm is not None:
+            ponto_armario = (lat_eq_final_armario, lon_eq_final_armario)
+        else:
+            ponto_armario = None  # ou lançar erro, ou setar coordenadas padrão
         
 
         def normalizar_sequenciamento_prmario(df, ponto_inicial, setagem_inicio=1):
