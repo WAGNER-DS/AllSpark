@@ -8,4 +8,5 @@ geopy
 beautifulsoup4
 pytz
 psycopg2-binary==2.9.9
+sqlalchemy==2.0.29
 
