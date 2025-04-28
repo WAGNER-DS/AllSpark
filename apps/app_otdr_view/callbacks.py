@@ -117,6 +117,7 @@ def registrar_callbacks(app):
         prevent_initial_call=True
     )
     def processar_dados(n_clicks, uf, municipio, cto, distancia_otdr):
+                import pandas as pd
         if not all([uf, municipio, cto]):
             return html.Div("⚠️ Por favor, selecione UF, município e CTO.")
 
@@ -126,16 +127,9 @@ def registrar_callbacks(app):
         caminho_secundarios = os.path.join("data", "INVENTORY", "CABOS", municipio_folder, "cabos_secundarios_group.csv")
         caminho_tracados = os.path.join("data", "INVENTORY", "CABOS", municipio_folder, "cabos_tracados.csv")
 
-        print(f"📂 Caminho cto: {caminho_cto}")
-        print(f"📂 Caminho primários: {caminho_primarios}")
-        print(f"📂 Caminho secundários: {caminho_secundarios}")
-        print(f"📂 Caminho traçados: {caminho_tracados}")
-    
         if not os.path.exists(caminho_cto):
-            print(f"❌ Arquivo {caminho_cto} não encontrado!")
-            return html.Div(f"Arquivo {caminho_cto} não encontrado.")
-            
-        
+            return html.Div(f"Arquivo não encontrado: {caminho_cto}")
+
         df_cto = pd.read_csv(caminho_cto, sep=";")
         df_cto = df_cto[df_cto["CTO_NAME"] == cto]
         uid_cto = df_cto.iloc[0]["UID_EQUIP"]
@@ -407,9 +401,10 @@ def registrar_callbacks(app):
                         polyline.add_to(camada_prim)
                     else:
                         polyline.add_to(camada_sec)
-
                 except Exception as e:
-                    st.warning(f"Erro ao desenhar cabo: {e}")
+                    print(f"Erro ao desenhar cabo: {e}")
+                
+                
         camada_prim.add_to(mapa)
         camada_sec.add_to(mapa)
 
@@ -609,6 +604,34 @@ def registrar_callbacks(app):
         else:
             ponto_armario = None  # ou lançar erro, ou setar coordenadas padrão
         
+        nome_armario = info['ARMARIO']
+        if ponto_armario is not None:
+            
+
+            folium.Marker(
+                location=ponto_armario,
+                icon=folium.Icon(icon='server', prefix='fa', color='purple'),
+                tooltip=f"Armário - {nome_armario}",
+                popup=f"Armário: {nome_armario}"
+            ).add_to(mapa)
+
+            # Também colocar o nome como texto abaixo do marcador (opcional, mais bonito)
+            folium.Marker(
+                [ponto_armario[0] - 0.00002, ponto_armario[1]],
+                icon=folium.DivIcon(
+                    html=f"""
+                    <div style="
+                        font-size: 10px;
+                        color: purple;
+                        text-align: center;
+                        font-weight: bold;
+                        transform: translateY(10px);
+                    ">{nome_armario}</div>
+                    """
+                )
+            ).add_to(mapa)
+
+        
 
         def normalizar_sequenciamento_prmario(df, ponto_inicial, setagem_inicio=1):
             df_resultado = df.copy()
@@ -723,31 +746,516 @@ def registrar_callbacks(app):
         camada_total.add_to(mapa)
 
         from folium.plugins import AntPath
+        from folium.plugins import AntPath
+        from geopy.distance import geodesic
 
+        def normalizar_sequencia_sec_folgas(df, ponto_cto):
+            df = df.copy()
+
+            # Arredondamento e criação dos pontos invertidos
+            df["PONTO INICIAL INVERTIDO"] = df[["LATITUDE_EQUIP1", "LONGITUDE_EQUIP1"]].apply(lambda x: [round(x[0], 7), round(x[1], 7)], axis=1)
+            df["PONTO FINAL INVERTIDO"] = df[["LATITUDE_EQUIP2", "LONGITUDE_EQUIP2"]].apply(lambda x: [round(x[0], 7), round(x[1], 7)], axis=1)
+
+            # Inicializa as colunas
+            df["PONTO INICIAL_NORMALIZADO"] = None
+            df["PONTO FINAL_NORMALIZADO"] = None
+            df["SETAGEM DA ORDEM"] = None
+            df["AÇÃO"] = None
+
+            # 🔵 NOVO: Verificar se precisa inverter os sequenciamentos
+            sequencias = sorted(df["SEQUENCIAMENTO_DO_ENCAMINHAMENTO"].dropna().unique())
+            sequencia_min = min(sequencias)
+            sequencia_max = max(sequencias)
+
+            ponto_atual = [round(ponto_cto[0], 7), round(ponto_cto[1], 7)]
+
+            # Busca nos segmentos do último sequenciamento
+            df_ultimo_seq = df[df["SEQUENCIAMENTO_DO_ENCAMINHAMENTO"] == sequencia_max]
+            encontrou_no_final = (
+                df_ultimo_seq["PONTO INICIAL INVERTIDO"].apply(lambda x: x == ponto_atual).any() or
+                df_ultimo_seq["PONTO FINAL INVERTIDO"].apply(lambda x: x == ponto_atual).any()
+            )
+
+            if not encontrou_no_final:
+                # Tenta no primeiro sequenciamento
+                df_primeiro_seq = df[df["SEQUENCIAMENTO_DO_ENCAMINHAMENTO"] == sequencia_min]
+                encontrou_no_inicio = (
+                    df_primeiro_seq["PONTO INICIAL INVERTIDO"].apply(lambda x: x == ponto_atual).any() or
+                    df_primeiro_seq["PONTO FINAL INVERTIDO"].apply(lambda x: x == ponto_atual).any()
+                )
+
+                if encontrou_no_inicio:
+                    # 🛠️ Reordenar os sequenciamentos: o último vira primeiro, o penúltimo vira segundo...
+                    mapping = {old_seq: new_seq for new_seq, old_seq in enumerate(sorted(sequencias, reverse=True), start=1)}
+                    df["SEQUENCIAMENTO_DO_ENCAMINHAMENTO"] = df["SEQUENCIAMENTO_DO_ENCAMINHAMENTO"].map(mapping)
+
+            # 🔵 Agora sim, prossegue com o processamento normal
+            sequencias = sorted(df["SEQUENCIAMENTO_DO_ENCAMINHAMENTO"].dropna().unique(), reverse=True)
+
+            ordem = 1
+            ponto_atual = [round(ponto_cto[0], 7), round(ponto_cto[1], 7)]
+
+            for seq in sequencias:
+                df_seq = df[(df["SEQUENCIAMENTO_DO_ENCAMINHAMENTO"] == seq) & (df["SETAGEM DA ORDEM"].isna())]
+
+                while True:
+                    match_idx = df_seq[df_seq["PONTO INICIAL INVERTIDO"].apply(lambda x: x == ponto_atual)].index
+                    if not match_idx.empty:
+                        idx = match_idx[0]
+                        df.at[idx, "PONTO INICIAL_NORMALIZADO"] = df.at[idx, "PONTO INICIAL INVERTIDO"]
+                        df.at[idx, "PONTO FINAL_NORMALIZADO"] = df.at[idx, "PONTO FINAL INVERTIDO"]
+                        df.at[idx, "SETAGEM DA ORDEM"] = ordem
+                        df.at[idx, "AÇÃO"] = ""
+                        ponto_atual = df.at[idx, "PONTO FINAL INVERTIDO"]
+                        ordem += 1
+                        df_seq = df[(df["SEQUENCIAMENTO_DO_ENCAMINHAMENTO"] == seq) & (df["SETAGEM DA ORDEM"].isna())]
+                        continue
+
+                    match_idx = df_seq[df_seq["PONTO FINAL INVERTIDO"].apply(lambda x: x == ponto_atual)].index
+                    if not match_idx.empty:
+                        idx = match_idx[0]
+                        df.at[idx, "PONTO INICIAL_NORMALIZADO"] = df.at[idx, "PONTO FINAL INVERTIDO"]
+                        df.at[idx, "PONTO FINAL_NORMALIZADO"] = df.at[idx, "PONTO INICIAL INVERTIDO"]
+                        df.at[idx, "SETAGEM DA ORDEM"] = ordem
+                        df.at[idx, "AÇÃO"] = "INVERTEU"
+                        ponto_atual = df.at[idx, "PONTO INICIAL INVERTIDO"]
+
+                        campos_para_inverter = [
+                            ("EQUIPAMENTO_1", "UID_EQUIPAMENTO_2"),
+                            ("NOME_EQUIPAMENTO_1", "NOME_EQUIPAMENTO_2"),
+                            ("TIPO_EQUIP1", "TIPO_EQUIP2"),
+                            ("UID_EQUIPAMENTO_LOGICO_1", "UID_EQUIPAMENTO_LOGICO_2"),
+                            ("NOME_EQUIPAMENTO_LOGICO_1", "NOME_EQUIPAMENTO_LOGICO_2"),
+                            ("LATITUDE_EQUIP1", "LATITUDE_EQUIP2"),
+                            ("LONGITUDE_EQUIP1", "LONGITUDE_EQUIP2"),
+                            ("CE-T1", "CE-T2"),
+                        ]
+                        for col1, col2 in campos_para_inverter:
+                            temp = df.at[idx, col1]
+                            df.at[idx, col1] = df.at[idx, col2]
+                            df.at[idx, col2] = temp
+
+                        ordem += 1
+                        df_seq = df[(df["SEQUENCIAMENTO_DO_ENCAMINHAMENTO"] == seq) & (df["SETAGEM DA ORDEM"].isna())]
+                        continue
+
+                    break
+
+            df_final = df.sort_values(by="SETAGEM DA ORDEM").reset_index(drop=True)
+
+            # Captura o último ponto (LATITUDE_EQUIP2, LONGITUDE_EQUIP2)
+            ultimo_ponto = (
+                df_final.iloc[-1]["LATITUDE_EQUIP2"],
+                df_final.iloc[-1]["LONGITUDE_EQUIP2"]
+            )
+
+            return df_final, ultimo_ponto
+
+        df_sec_folgas_normalizado, ultimo_ponto = normalizar_sequencia_sec_folgas(sec_filtrado, ponto_cto)
+
+        sec_filtrado_cto=df_sec_folgas_normalizado.copy()
+
+        def normalizar_sequencia_pri_folgas(df, ponto_ceos):
+            df = df.copy()
+
+            # Arredondamento e criação dos pontos invertidos
+            df["PONTO INICIAL INVERTIDO"] = df[["LATITUDE_EQUIP1", "LONGITUDE_EQUIP1"]].apply(lambda x: [round(x[0], 7), round(x[1], 7)], axis=1)
+            df["PONTO FINAL INVERTIDO"] = df[["LATITUDE_EQUIP2", "LONGITUDE_EQUIP2"]].apply(lambda x: [round(x[0], 7), round(x[1], 7)], axis=1)
+
+            # Inicializa as colunas
+            df["PONTO INICIAL_NORMALIZADO"] = None
+            df["PONTO FINAL_NORMALIZADO"] = None
+            df["SETAGEM DA ORDEM"] = None
+            df["AÇÃO"] = None
+
+            # 🔵 NOVO: Verificar se precisa inverter os sequenciamentos
+            sequencias = sorted(df["SEQUENCIAMENTO_DO_ENCAMINHAMENTO"].dropna().unique())
+            sequencia_min = min(sequencias)
+            sequencia_max = max(sequencias)
+
+            ponto_atual = [round(ponto_ceos[0], 7), round(ponto_ceos[1], 7)]
+
+            # Busca nos segmentos do último sequenciamento
+            df_ultimo_seq = df[df["SEQUENCIAMENTO_DO_ENCAMINHAMENTO"] == sequencia_max]
+            encontrou_no_final = (
+                df_ultimo_seq["PONTO INICIAL INVERTIDO"].apply(lambda x: x == ponto_atual).any() or
+                df_ultimo_seq["PONTO FINAL INVERTIDO"].apply(lambda x: x == ponto_atual).any()
+            )
+
+            if not encontrou_no_final:
+                # Tenta no primeiro sequenciamento
+                df_primeiro_seq = df[df["SEQUENCIAMENTO_DO_ENCAMINHAMENTO"] == sequencia_min]
+                encontrou_no_inicio = (
+                    df_primeiro_seq["PONTO INICIAL INVERTIDO"].apply(lambda x: x == ponto_atual).any() or
+                    df_primeiro_seq["PONTO FINAL INVERTIDO"].apply(lambda x: x == ponto_atual).any()
+                )
+
+                if encontrou_no_inicio:
+                    # 🛠️ Reordenar os sequenciamentos: o último vira primeiro, o penúltimo vira segundo...
+                    mapping = {old_seq: new_seq for new_seq, old_seq in enumerate(sorted(sequencias, reverse=True), start=1)}
+                    df["SEQUENCIAMENTO_DO_ENCAMINHAMENTO"] = df["SEQUENCIAMENTO_DO_ENCAMINHAMENTO"].map(mapping)
+
+            # 🔵 Agora sim, prossegue com o processamento normal
+            sequencias = sorted(df["SEQUENCIAMENTO_DO_ENCAMINHAMENTO"].dropna().unique(), reverse=True)
+
+            ordem = 1
+            ponto_atual = [round(ponto_ceos[0], 7), round(ponto_ceos[1], 7)]
+
+            for seq in sequencias:
+                df_seq = df[(df["SEQUENCIAMENTO_DO_ENCAMINHAMENTO"] == seq) & (df["SETAGEM DA ORDEM"].isna())]
+
+                while True:
+                    match_idx = df_seq[df_seq["PONTO INICIAL INVERTIDO"].apply(lambda x: x == ponto_atual)].index
+                    if not match_idx.empty:
+                        idx = match_idx[0]
+                        df.at[idx, "PONTO INICIAL_NORMALIZADO"] = df.at[idx, "PONTO INICIAL INVERTIDO"]
+                        df.at[idx, "PONTO FINAL_NORMALIZADO"] = df.at[idx, "PONTO FINAL INVERTIDO"]
+                        df.at[idx, "SETAGEM DA ORDEM"] = ordem
+                        df.at[idx, "AÇÃO"] = ""
+                        ponto_atual = df.at[idx, "PONTO FINAL INVERTIDO"]
+                        ordem += 1
+                        df_seq = df[(df["SEQUENCIAMENTO_DO_ENCAMINHAMENTO"] == seq) & (df["SETAGEM DA ORDEM"].isna())]
+                        continue
+
+                    match_idx = df_seq[df_seq["PONTO FINAL INVERTIDO"].apply(lambda x: x == ponto_atual)].index
+                    if not match_idx.empty:
+                        idx = match_idx[0]
+                        df.at[idx, "PONTO INICIAL_NORMALIZADO"] = df.at[idx, "PONTO FINAL INVERTIDO"]
+                        df.at[idx, "PONTO FINAL_NORMALIZADO"] = df.at[idx, "PONTO INICIAL INVERTIDO"]
+                        df.at[idx, "SETAGEM DA ORDEM"] = ordem
+                        df.at[idx, "AÇÃO"] = "INVERTEU"
+                        ponto_atual = df.at[idx, "PONTO INICIAL INVERTIDO"]
+
+                        campos_para_inverter = [
+                            ("EQUIPAMENTO_1", "UID_EQUIPAMENTO_2"),
+                            ("NOME_EQUIPAMENTO_1", "NOME_EQUIPAMENTO_2"),
+                            ("LATITUDE_EQUIP1", "LATITUDE_EQUIP2"),
+                            ("LONGITUDE_EQUIP1", "LONGITUDE_EQUIP2"),
+                        ]
+                        for col1, col2 in campos_para_inverter:
+                            temp = df.at[idx, col1]
+                            df.at[idx, col1] = df.at[idx, col2]
+                            df.at[idx, col2] = temp
+
+                        ordem += 1
+                        df_seq = df[(df["SEQUENCIAMENTO_DO_ENCAMINHAMENTO"] == seq) & (df["SETAGEM DA ORDEM"].isna())]
+                        continue
+
+                    break
+
+            df_final = df.sort_values(by="SETAGEM DA ORDEM").reset_index(drop=True)
+
+            # Captura o último ponto (LATITUDE_EQUIP2, LONGITUDE_EQUIP2)
+            ultimo_ponto = (
+                df_final.iloc[-1]["LATITUDE_EQUIP2"],
+                df_final.iloc[-1]["LONGITUDE_EQUIP2"]
+            )
+
+            return df_final, ultimo_ponto
+
+
+        df_pri_folgas_normalizado,ultimo_ponto = normalizar_sequencia_pri_folgas(prim_filtrado, ultimo_ponto)
+        pri_filtrado_cto=df_pri_folgas_normalizado.copy()
+
+
+        # 🔵 4. Criar camada de CTOs filtradas no mapa
+        
+        
+        # 🔵 2. Filtrar CE-T2 == 'NAO'
+        if 'CE-T1' in df_sec_folgas_normalizado.columns:
+            sec_filtrado_cto = sec_filtrado_cto[sec_filtrado_cto['CE-T1'] == 'NAO']
+
+        # 🔵 3. Criar coluna FOLGA
+        ultimo_sequenciamento = sec_filtrado_cto['SEQUENCIAMENTO_DO_ENCAMINHAMENTO'].max()
+
+        def calcular_folga(row):
+            if row['TIPO_REDE'] == 'BARRAMENTO':
+                return row['COMP_NORM'] - row['COMPRIMENTO_GEOMETRICO']
+            else:
+                if row['SEQUENCIAMENTO_DO_ENCAMINHAMENTO'] == ultimo_sequenciamento:
+                    return 10
+                else:
+                    return 20
+
+        sec_filtrado_cto['FOLGA'] = sec_filtrado_cto.apply(calcular_folga, axis=1)
+        # Visualização no Streamlit
+        pri_filtrado_cto['FOLGA']=30
+        #with st.expander("📍 Tabela ver2"):
+        #    st.dataframe(pri_filtrado_cto) 
+        
+
+        colunas_desejadas = [
+            'IDENTIFICADOR_UNICO_CABO_CONECTADO', 'SEQUENCIAMENTO_DO_ENCAMINHAMENTO',
+            'TIPO_REDE', 'NOME_EQUIPAMENTO_1', 'LATITUDE_EQUIP1', 'LONGITUDE_EQUIP1',
+            'COMPRIMENTO_GEOMETRICO', 'COMP_NORM'
+        ]
+        #df_sec_folgas_normalizado = df_sec_folgas_normalizado[colunas_desejadas].copy()
+
+        camada_cto_filtradas = folium.FeatureGroup(name="CTOs na Rota", show=False)
+
+        for _, row in sec_filtrado_cto.iterrows():
+            try:
+                lat = float(str(row["LATITUDE_EQUIP1"]).replace(',', '.'))
+                lon = float(str(row["LONGITUDE_EQUIP1"]).replace(',', '.'))
+                nome = row['NOME_EQUIPAMENTO_1']
+                folga = round(row['FOLGA'], 0)
+
+                # Bolinha verde simples
+                folium.CircleMarker(
+                    location=[lat, lon],
+                    radius=6,
+                    color='green',
+                    fill=True,
+                    fill_color='green',
+                    fill_opacity=0.85,
+                    tooltip=f"{nome} | Redutor: {folga:.0f}m", 
+                    popup=f"{nome}<br>Redutor: {folga:.0f} m"
+                ).add_to(camada_cto_filtradas)
+
+                # Nome abaixo da bolinha (ajustando com CSS no transform)
+                folium.Marker(
+                    [lat - 0.00001, lon],
+                    icon=folium.DivIcon(html=f'''
+                        <div style="
+                            font-size: 10px;
+                            color: black;
+                            text-align: center;
+                            transform: translateY(10px); /* empurra o texto para baixo */
+                        ">{nome}</div>
+                    ''')
+                ).add_to(camada_cto_filtradas)
+
+            except Exception as e:
+                print(f"Erro ao desenhar CTO filtrada: {e}")
+
+
+        # 🔵 5. Adicionar a camada no mapa
+        camada_cto_filtradas.add_to(mapa)
+
+
+        camada_ceos_filtradas = folium.FeatureGroup(name="CEO/CEOS na Rota", show=False)
+
+        for _, row in pri_filtrado_cto.iterrows():
+            try:
+                lat = float(str(row["LATITUDE_EQUIP1"]).replace(',', '.'))
+                lon = float(str(row["LONGITUDE_EQUIP1"]).replace(',', '.'))
+                nome_original = row['NOME_EQUIPAMENTO_1']
+                folga = round(row['FOLGA'], 0)
+
+                # 🔵 Substituir "CAIXA DE EMENDA GENERICA" por "CEG-"
+                if nome_original.startswith("CAIXA DE EMENDA GENERICA "):
+                    nome = nome_original.replace("CAIXA DE EMENDA GENERICA ", "CEG-")
+                else:
+                    nome = nome_original
+                svg_icon = folium.DivIcon(html=f"""
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16">
+                        <rect width="16" height="8" rx="4" ry="4" style="fill:red;stroke:black;stroke-width:1;" />
+                    </svg>
+                """)
+                # 🔵 Agora um DivIcon como retângulo no lugar da bolinha
+                folium.Marker(
+                    location=[lat, lon],
+                    icon=svg_icon,
+                    tooltip=f"{nome} | Redutor: {folga:.0f}m", 
+                    popup=f"{nome}<br>Redutor: {folga:.0f} m"
+                ).add_to(camada_ceos_filtradas)
+
+            except Exception as e:
+                print(f"Erro ao desenhar CEO/CEOS filtrada: {e}")
+
+        # 🔵 Adicionar a camada no mapa
+        camada_ceos_filtradas.add_to(mapa)
+
+
+
+
+
+        # Criar dict: {(lat, lon) → folga}
+        cto_folgas = {
+            (
+                round(float(str(row["LATITUDE_EQUIP1"]).replace(',', '.')), 6),
+                round(float(str(row["LONGITUDE_EQUIP1"]).replace(',', '.')), 6)
+            ): round(float(row["FOLGA"]), 2)
+            for _, row in sec_filtrado_cto.iterrows()
+        }
+        import streamlit as st
+        import pandas as pd
+        import streamlit as st
+
+        # 🔵 Transformar o cto_folgas (dicionário) para uma lista amigável
+        dados_folga = []
+
+        for (lat, lon), folga in cto_folgas.items():
+            dados_folga.append({
+                "LATITUDE": lat,
+                "LONGITUDE": lon,
+                "FOLGA (m)": folga
+            })
+
+        # 🔵 Agora criar um DataFrame
+        df_cto_folgas = pd.DataFrame(dados_folga)
+
+        # Criar dict: {(lat, lon) → folga}
+        ceos_folgas = {
+            (
+                round(float(str(row["LATITUDE_EQUIP1"]).replace(',', '.')), 6),
+                round(float(str(row["LONGITUDE_EQUIP1"]).replace(',', '.')), 6)
+            ): round(float(row["FOLGA"]), 2)
+            for _, row in pri_filtrado_cto.iterrows()
+        }
+        import streamlit as st
+        import pandas as pd
+        import streamlit as st
+
+        # 🔵 Transformar o cto_folgas (dicionário) para uma lista amigável
+        dados_ceos_folga = []
+
+        for (lat, lon), folga in ceos_folgas.items():
+            dados_ceos_folga.append({
+                "LATITUDE": lat,
+                "LONGITUDE": lon,
+                "FOLGA (m)": folga
+            })
+
+        # 🔵 Agora criar um DataFrame
+        df_ceos_folgas = pd.DataFrame(dados_ceos_folga)
+
+        # 🔵 Exibir no Streamlit
+        #st.subheader("📍 CTOs com Folga (Lista serializada)")
+        #st.dataframe(df_ceos_folgas.style.format({"FOLGA (m)": "{:.0f}"}), use_container_width=True)
+
+        # Gerar lista ordenada de CTOs com coordenadas + folga (de baixo pra cima)
+        cto_folgas_ordenadas = sorted(
+            cto_folgas.items(), 
+            key=lambda x: x[0][0]  # ordena pela latitude
+        )
+
+        # 🔵 Primeiro: calcular a nova distância corrigida pelas folgas
+        # 🔵 1. Recalcular a nova distância OTDR com as folgas antes de inverter o caminho
+
+        from geopy.distance import geodesic
+
+        distancia_restante = int(distancia_otdr)
+        nova_distancia_otdr = 0
+        log_folga = []
+
+        # 🔵 Ordenar o secundário por latitude decrescente
+        df_cto_folgas_sorted = df_cto_folgas.sort_values(by="LATITUDE", ascending=False).reset_index(drop=True)
+
+        # 🔵 Ordenar o primário também, para garantir
+        df_ceos_folgas_sorted = df_ceos_folgas
+
+        # 🧩 Controle para 500m percorridos no primário
+        distancia_percorrida_primario = 0
+
+        # 🔥 1. Varredura dos pontos Secundários
+        for i in range(len(df_cto_folgas_sorted)):
+            lat_atual = df_cto_folgas_sorted.loc[i, "LATITUDE"]
+            lon_atual = df_cto_folgas_sorted.loc[i, "LONGITUDE"]
+            folga_atual = df_cto_folgas_sorted.loc[i, "FOLGA (m)"]
+
+            # Desconta a folga primeiro
+            distancia_restante -= folga_atual
+            log_folga.append(f"📍 CTO {i}: {lat_atual:.6f}, {lon_atual:.6f} → -{folga_atual:.0f}m de folga | Saldo: {distancia_restante:.1f}m")
+
+            if distancia_restante <= 0:
+                log_folga.append(f"💥 Falha detectada no CTO {i} (saldo {distancia_restante:.1f}m)")
+                break
+
+            # Caminhar até o próximo CTO se possível
+            if i < len(df_cto_folgas_sorted) - 1:
+                lat_prox = df_cto_folgas_sorted.loc[i + 1, "LATITUDE"]
+                lon_prox = df_cto_folgas_sorted.loc[i + 1, "LONGITUDE"]
+                distancia_entre = geodesic((lat_atual, lon_atual), (lat_prox, lon_prox)).meters
+
+                if distancia_restante >= distancia_entre:
+                    nova_distancia_otdr += distancia_entre
+                    distancia_restante -= distancia_entre
+                    log_folga.append(f"➡️ Andou {distancia_entre:.1f}m até o próximo ponto | Novo saldo: {distancia_restante:.1f}m")
+                else:
+                    nova_distancia_otdr += distancia_restante
+                    log_folga.append(f"🛑 Parou no meio entre CTO {i} e {i+1} após andar {distancia_restante:.1f}m")
+                    distancia_restante = 0
+                    break
+
+        # 🔥 2. Se sobrou saldo positivo, começa a varrer o Primário
+        if distancia_restante > 0:
+            log_folga.append(f"🔵 Iniciando percurso no Primário...")
+
+            for i in range(len(df_ceos_folgas_sorted)):
+                lat_atual = df_ceos_folgas_sorted.loc[i, "LATITUDE"]
+                lon_atual = df_ceos_folgas_sorted.loc[i, "LONGITUDE"]
+                folga_atual = df_ceos_folgas_sorted.loc[i, "FOLGA (m)"]
+
+                # Descontar folga
+                distancia_restante -= folga_atual
+                log_folga.append(f"📍 CEOS {i}: {lat_atual:.6f}, {lon_atual:.6f} → -{folga_atual:.0f}m de folga | Saldo: {distancia_restante:.1f}m")
+
+                if distancia_restante <= 0:
+                    log_folga.append(f"💥 Falha detectada no CEOS {i} (saldo {distancia_restante:.1f}m)")
+                    break
+
+                if i < len(df_ceos_folgas_sorted) - 1:
+                    lat_prox = df_ceos_folgas_sorted.loc[i + 1, "LATITUDE"]
+                    lon_prox = df_ceos_folgas_sorted.loc[i + 1, "LONGITUDE"]
+                    distancia_entre = geodesic((lat_atual, lon_atual), (lat_prox, lon_prox)).meters
+
+                    if distancia_restante >= distancia_entre:
+                        nova_distancia_otdr += distancia_entre
+                        distancia_restante -= distancia_entre
+                        distancia_percorrida_primario += distancia_entre
+
+                        log_folga.append(f"➡️ Andou {distancia_entre:.1f}m no primário | Novo saldo: {distancia_restante:.1f}m")
+
+                        # A cada 500m caminhados no primário, descontar 20m
+                        if distancia_percorrida_primario >= 500:
+                            desconto_extra = 20
+                            distancia_restante -= desconto_extra
+                            distancia_percorrida_primario -= 500
+                            log_folga.append(f"🔻 Redução extra de {desconto_extra}m a cada 500m percorridos | Novo saldo: {distancia_restante:.1f}m")
+
+                    else:
+                        nova_distancia_otdr += distancia_restante
+                        log_folga.append(f"🛑 Parou no meio entre CEOS {i} e {i+1} após andar {distancia_restante:.1f}m")
+                        distancia_restante = 0
+                        break
+
+        # 🔥 3. Se ainda sobrou saldo positivo, soma na distância final
+        if distancia_restante > 0:
+            nova_distancia_otdr += distancia_restante
+            log_folga.append(f"➕ Sobrou saldo positivo {distancia_restante:.1f}m, somado na distância final.")
+
+        log_folga.append(f"✅ Nova distância OTDR para plotagem: {nova_distancia_otdr:.1f}m")
+        # 📦 Container tipo expander para mostrar o log
+        container_log_folga = html.Details([
+            html.Summary("🛠️ Log de cálculo da nova distância OTDR com folgas"),
+            html.Div([
+                html.Ul([html.Li(linha) for linha in log_folga], style={"paddingLeft": "20px"})
+            ])
+        ], style={
+            "backgroundColor": "#222",
+            "padding": "15px",
+            "borderRadius": "10px",
+            "marginTop": "20px",
+            "color": "white"
+        })
+
+        # (opcional: exibir no Streamlit)
+        #with st.expander("🛠️ Log de cálculo da nova distância OTDR com folgas"):
+        #    for linha in log_folga:
+        #        st.text(linha)
+
+        from geopy.distance import geodesic
+
+        # 🔁 Inverter o caminho para obter o trajeto CTO → OLT
         # 🔁 Inverter o caminho para obter o trajeto CTO → OLT
         caminho_reverso = caminho_total[::-1]
         #caminho_reverso = caminho_total
 
         # ⚡ Determinar o ponto da falha com base na distância OTDR
         if distancia_otdr and distancia_otdr.isdigit():
-            distancia_otdr_metros = int(distancia_otdr)
-            ponto_falha = encontrar_ponto_por_distancia(caminho_reverso, distancia_otdr_metros)
-            # 🔍 Coleta IP e registra a consulta
-            lat_falha, lon_falha = ponto_falha if ponto_falha else (None, None)
-            ip_usuario = get_user_ip()
-
-            registrar_consulta(
-                user=user_session.get("user"),
-                ip=ip_usuario,
-                uf=uf,
-                municipio=municipio,
-                cto=cto,
-                distancia_otdr=distancia_otdr,
-                lat_cto=lat,
-                lon_cto=lon,
-                lat_falha=lat_falha,
-                lon_falha=lon_falha
-            )
+            nova_distancia_otdr = int(nova_distancia_otdr)
+            ponto_falha = encontrar_ponto_por_distancia(caminho_reverso, nova_distancia_otdr)
 
             # 🔶 Camada reversa (CTO → ponto de falha)
             camada_falha = folium.FeatureGroup(name="Falha OTDR (CTO → OLT)", show=True)
@@ -757,10 +1265,16 @@ def registrar_callbacks(app):
             acumulado = 0
             for i in range(len(caminho_reverso) - 1):
                 dist = geodesic(caminho_reverso[i], caminho_reverso[i + 1]).meters
-                if acumulado + dist >= distancia_otdr_metros:
+                if acumulado + dist >= nova_distancia_otdr:
                     index_falha = i
                     break
                 acumulado += dist
+
+
+            # Exibir LOG no Streamlit
+            #with st.expander("🛠️ Log detalhado do percurso OTDR com folga"):
+            #    for linha in log_debug:
+            #        st.text(linha)
 
             if index_falha is not None:
                 trajeto_falha = caminho_reverso[:index_falha + 1] + [ponto_falha]
@@ -793,6 +1307,7 @@ def registrar_callbacks(app):
             else:
                 print("Não foi possível localizar o ponto da falha na rota.")
 
+        
         # Desenho interativo com Folium
         Draw(export=True, filename='meu_desenho.geojson').add_to(mapa)
         Fullscreen(position="topright").add_to(mapa)
@@ -950,7 +1465,10 @@ def registrar_callbacks(app):
                                 }),
                     dcc.Download(id="download-mapa-html")
                 ], style={"textAlign": "center", "marginTop": "20px"}),
+                html.Hr(),  # 🔥 Aqui você insere o log
+                container_log_folga,
         ]), map_html
+
 
     import sqlite3
     from dash import dcc  # já deve ter no início, mas caso não, pode deixar
