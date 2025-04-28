@@ -1078,9 +1078,8 @@ def registrar_callbacks(app):
             ): round(float(row["FOLGA"]), 2)
             for _, row in sec_filtrado_cto.iterrows()
         }
-        import streamlit as st
         import pandas as pd
-        import streamlit as st
+        
 
         # 🔵 Transformar o cto_folgas (dicionário) para uma lista amigável
         dados_folga = []
@@ -1103,9 +1102,9 @@ def registrar_callbacks(app):
             ): round(float(row["FOLGA"]), 2)
             for _, row in pri_filtrado_cto.iterrows()
         }
-        import streamlit as st
+        
         import pandas as pd
-        import streamlit as st
+        
 
         # 🔵 Transformar o cto_folgas (dicionário) para uma lista amigável
         dados_ceos_folga = []
