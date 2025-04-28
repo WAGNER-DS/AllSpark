@@ -126,9 +126,16 @@ def registrar_callbacks(app):
         caminho_secundarios = os.path.join("data", "INVENTORY", "CABOS", municipio_folder, "cabos_secundarios_group.csv")
         caminho_tracados = os.path.join("data", "INVENTORY", "CABOS", municipio_folder, "cabos_tracados.csv")
 
+        print(f"📂 Caminho cto: {caminho_cto}")
+        print(f"📂 Caminho primários: {caminho_primarios}")
+        print(f"📂 Caminho secundários: {caminho_secundarios}")
+        print(f"📂 Caminho traçados: {caminho_tracados}")
+    
         if not os.path.exists(caminho_cto):
-            return html.Div(f"Arquivo não encontrado: {caminho_cto}")
-
+            print(f"❌ Arquivo {caminho_cto} não encontrado!")
+            return html.Div(f"Arquivo {caminho_cto} não encontrado.")
+            
+        
         df_cto = pd.read_csv(caminho_cto, sep=";")
         df_cto = df_cto[df_cto["CTO_NAME"] == cto]
         uid_cto = df_cto.iloc[0]["UID_EQUIP"]
