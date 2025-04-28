@@ -1,12 +1,13 @@
 # core/db.py
+
+from sqlalchemy import create_engine
 import psycopg2
-from psycopg2.extras import RealDictCursor
+import os
+
+def get_engine():
+    db_url = os.getenv("DATABASE_URL")
+    return create_engine(db_url)
 
 def get_connection():
-    return psycopg2.connect(
-        dbname="seu_banco",
-        user="seu_usuario",
-        password="sua_senha",
-        host="localhost",  # ou IP do servidor
-        port="5432"
-    )
+    db_url = os.getenv("DATABASE_URL")
+    return psycopg2.connect(db_url)
