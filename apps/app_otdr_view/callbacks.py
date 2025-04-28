@@ -127,8 +127,8 @@ def registrar_callbacks(app):
         caminho_secundarios = os.path.join("data", "INVENTORY", "CABOS", municipio_folder, "cabos_secundarios_group.csv")
         caminho_tracados = os.path.join("data", "INVENTORY", "CABOS", municipio_folder, "cabos_tracados.csv")
 
-        if not os.path.exists(caminho_cto):
-            return html.Div(f"Arquivo não encontrado: {caminho_cto}")
+        if not all([uf, municipio, cto]):
+            return html.Div("⚠️ Por favor, selecione UF, município e CTO."), None
 
         df_cto = pd.read_csv(caminho_cto, sep=";")
         df_cto = df_cto[df_cto["CTO_NAME"] == cto]
