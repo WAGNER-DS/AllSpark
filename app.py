@@ -20,7 +20,10 @@ app = dash.Dash(__name__, server=server, suppress_callback_exceptions=True)
 registrar_login_callbacks(app)
 registrar_callbacks(app)
 
-inicializar_db()  # 🔹 Inicializa o banco de log OTDR
+try:
+    inicializar_db()
+except Exception as e:
+    print(f"Erro inicializando o banco: {e}")
 
 
 # Layout principal com Store persistente
