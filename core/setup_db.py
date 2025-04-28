@@ -1,56 +1,50 @@
-import sqlite3
+# core/setup_db_postgres.py
+from core.db import get_connection
 
-def criar_banco():
-    conn = sqlite3.connect("auth.db")
+def criar_banco_postgres():
+    conn = get_connection()
     cursor = conn.cursor()
 
-    # Tabela de perfis
+    # Criação das tabelas
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS perfis (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            id SERIAL PRIMARY KEY,
             nome TEXT NOT NULL
-        )
+        );
     """)
 
-    # Tabela de apps
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS apps (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            id SERIAL PRIMARY KEY,
             nome TEXT NOT NULL,
             rota TEXT NOT NULL
-        )
+        );
     """)
 
-    # Tabela de usuários
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS usuarios (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            id SERIAL PRIMARY KEY,
             nome TEXT NOT NULL,
             senha TEXT NOT NULL,
             email TEXT NOT NULL,
-            perfil_id INTEGER,
-            FOREIGN KEY (perfil_id) REFERENCES perfis(id)
-        )
+            perfil_id INTEGER REFERENCES perfis(id)
+        );
     """)
 
-    # Tabela de permissões
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS permissoes (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            perfil_id INTEGER,
-            app_id INTEGER,
-            FOREIGN KEY (perfil_id) REFERENCES perfis(id),
-            FOREIGN KEY (app_id) REFERENCES apps(id)
-        )
+            id SERIAL PRIMARY KEY,
+            perfil_id INTEGER REFERENCES perfis(id),
+            app_id INTEGER REFERENCES apps(id)
+        );
     """)
 
-    # Inserções
+    # Inserts iniciais
     perfis = [
         (1, 'admin'),
         (2, 'campo'),
         (3, 'b2b')
     ]
-
     apps = [
         (1, 'Hub', '/hub'),
         (2, 'OSP Diagnóstico', '/app_OSP_Diagnocts'),
@@ -59,27 +53,25 @@ def criar_banco():
         (5, 'Radar CTO', '/app_radar_cto'),
         (6, 'ETP', '/app_etp')
     ]
-
     usuarios = [
         (1, 'admin', 'wds2025', 'antonio.cavalcante@fibrasil.com.br', 1),
         (2, 'Ezequiel', 'fiber123', 'teste@teste', 2),
         (3, 'ondacom', 'b2b123', 'teste@teste', 3)
     ]
-
     permissoes = [
-        (1, 1), (1, 2), (1, 3), (1, 4), (1, 5), (1, 6),  # admin
-        (2, 2), (2, 3),                                  # campo
-        (3, 4)                                           # b2b
+        (1,1), (1,2), (1,3), (1,4), (1,5), (1,6),
+        (2,2), (2,3),
+        (3,4)
     ]
 
-    cursor.executemany("INSERT OR IGNORE INTO perfis (id, nome) VALUES (?, ?)", perfis)
-    cursor.executemany("INSERT OR IGNORE INTO apps (id, nome, rota) VALUES (?, ?, ?)", apps)
-    cursor.executemany("INSERT OR IGNORE INTO usuarios (id, nome, senha, email, perfil_id) VALUES (?, ?, ?, ?, ?)", usuarios)
-    cursor.executemany("INSERT OR IGNORE INTO permissoes (perfil_id, app_id) VALUES (?, ?)", permissoes)
+    cursor.executemany("INSERT INTO perfis (id, nome) VALUES (%s, %s) ON CONFLICT DO NOTHING", perfis)
+    cursor.executemany("INSERT INTO apps (id, nome, rota) VALUES (%s, %s, %s) ON CONFLICT DO NOTHING", apps)
+    cursor.executemany("INSERT INTO usuarios (id, nome, senha, email, perfil_id) VALUES (%s, %s, %s, %s, %s) ON CONFLICT DO NOTHING", usuarios)
+    cursor.executemany("INSERT INTO permissoes (perfil_id, app_id) VALUES (%s, %s) ON CONFLICT DO NOTHING", permissoes)
 
     conn.commit()
     conn.close()
-    print("🎉 Banco criado com sucesso!")
+    print("🎉 Banco de autenticação no PostgreSQL criado com sucesso!")
 
 if __name__ == "__main__":
-    criar_banco()
+    criar_banco_postgres()
