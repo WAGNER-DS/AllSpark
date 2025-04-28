@@ -117,7 +117,7 @@ def registrar_callbacks(app):
         prevent_initial_call=True
     )
     def processar_dados(n_clicks, uf, municipio, cto, distancia_otdr):
-                import pandas as pd
+        import pandas as pd
         if not all([uf, municipio, cto]):
             return html.Div("⚠️ Por favor, selecione UF, município e CTO.")
 
