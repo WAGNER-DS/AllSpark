@@ -1,22 +1,16 @@
 #core/auth.py
-import sqlite3
-from pathlib import Path
 
-DB_PATH = Path(__file__).resolve().parent.parent / "auth.db"
+from core.db import get_connection
 
 def check_credentials(username: str, password: str):
-    """
-    Verifica se o usuário e senha estão corretos.
-    Retorna dict com info se sucesso, ou None se falha.
-    """
-    conn = sqlite3.connect(DB_PATH)
+    conn = get_connection()
     cursor = conn.cursor()
 
     cursor.execute("""
         SELECT u.id, u.nome, u.perfil_id, p.nome 
         FROM usuarios u
         JOIN perfis p ON u.perfil_id = p.id
-        WHERE u.nome = ? AND u.senha = ?
+        WHERE u.nome = %s AND u.senha = %s
     """, (username, password))
 
     row = cursor.fetchone()
@@ -34,17 +28,14 @@ def check_credentials(username: str, password: str):
 
 
 def get_apps_por_perfil(perfil_id: int):
-    """
-    Retorna lista de apps permitidos para o perfil.
-    """
-    conn = sqlite3.connect(DB_PATH)
+    conn = get_connection()
     cursor = conn.cursor()
 
     cursor.execute("""
         SELECT a.nome, a.rota
         FROM permissoes pm
         JOIN apps a ON pm.app_id = a.id
-        WHERE pm.perfil_id = ?
+        WHERE pm.perfil_id = %s
     """, (perfil_id,))
 
     results = cursor.fetchall()
