@@ -1,9 +1,11 @@
 services:
   - type: web
-    name: allspark-otdr
+    name: allspark-dash
     env: python
-    buildCommand: ""
+    buildCommand: |
+      pip install -r requirements.txt
+      python core/setup_db_postgres.py
     startCommand: gunicorn app:server
     envVars:
-      - key: PYTHON_VERSION
-        value: "3.10"
+      - key: DATABASE_URL
+        value: postgresql://allspark_logs_user:v5RJex6BmD6mXoVX8bUuezeHs9EYvu0G@dpg-d05sg3k9c44c73e1ea9g-a.oregon-postgres.render.com/allspark_logs
