@@ -1,21 +1,24 @@
 #apps/admin/usuarios_callbacks.py
-from dash import Input, Output, State, ctx, html, dash_table
+from dash import Input, Output, State, html, dash_table
 from core.db import get_connection
 
 def registrar_usuarios_callbacks(app):
     # Preencher dropdown de perfis
     @app.callback(
         Output("novo-perfil", "options"),
-        Input("novo-perfil", "id"),
-        prevent_initial_call=True
+        Input("carregar-usuarios-trigger", "n_intervals"),
+        prevent_initial_call=False
     )
     def carregar_perfis(_):
-        conn = get_connection()
-        cursor = conn.cursor()
-        cursor.execute("SELECT id, nome FROM perfis ORDER BY nome")
-        perfis = cursor.fetchall()
-        conn.close()
-        return [{"label": nome, "value": id} for id, nome in perfis]
+        try:
+            conn = get_connection()
+            cursor = conn.cursor()
+            cursor.execute("SELECT id, nome FROM perfis ORDER BY nome")
+            perfis = cursor.fetchall()
+            conn.close()
+            return [{"label": nome, "value": id} for id, nome in perfis]
+        except Exception as e:
+            return []
 
     # Criar novo usuário
     @app.callback(
@@ -30,8 +33,7 @@ def registrar_usuarios_callbacks(app):
     )
     def criar_usuario(n_clicks, nome, email, senha, perfil_id):
         if not all([nome, email, senha, perfil_id]):
-            return "⚠️ Preencha todos os campos.", html.Div("Tabela aqui...")
-
+            return "⚠️ Preencha todos os campos.", atualizar_tabela_usuarios()
 
         try:
             conn = get_connection()
@@ -46,7 +48,16 @@ def registrar_usuarios_callbacks(app):
         except Exception as e:
             return f"❌ Erro: {e}", atualizar_tabela_usuarios()
 
-    
+    # Carrega a tabela de usuários ao iniciar
+    @app.callback(
+        Output("tabela-usuarios", "children"),
+        Input("carregar-usuarios-trigger", "n_intervals"),
+        prevent_initial_call=False
+    )
+    def carregar_tabela(_):
+        return atualizar_tabela_usuarios()
+
+
 def atualizar_tabela_usuarios():
     try:
         conn = get_connection()
