@@ -137,6 +137,8 @@ def roteador(pathname, search, session_data):
             html.H3("❌ Erro interno no roteador", style={"color": "red"}),
             html.Pre(str(e), style={"color": "salmon"})
         ])
+        
+server = app.server
 
 # Executa
 if __name__ == "__main__":
