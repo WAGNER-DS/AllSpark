@@ -30,7 +30,8 @@ def registrar_usuarios_callbacks(app):
     )
     def criar_usuario(n_clicks, nome, email, senha, perfil_id):
         if not all([nome, email, senha, perfil_id]):
-            return "⚠️ Preencha todos os campos.", atualizar_tabela_usuarios()
+            return "⚠️ Preencha todos os campos.", html.Div("Tabela aqui...")
+
 
         try:
             conn = get_connection()
