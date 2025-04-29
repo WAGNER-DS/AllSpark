@@ -746,7 +746,6 @@ def registrar_callbacks(app):
         camada_total.add_to(mapa)
 
         from folium.plugins import AntPath
-        from folium.plugins import AntPath
         from geopy.distance import geodesic
 
         def normalizar_sequencia_sec_folgas(df, ponto_cto):
@@ -955,9 +954,12 @@ def registrar_callbacks(app):
 
 
         df_pri_folgas_normalizado,ultimo_ponto = normalizar_sequencia_pri_folgas(prim_filtrado, ultimo_ponto)
-        pri_filtrado_cto=df_pri_folgas_normalizado.copy()
+        pri_filtrado_cto=df_pri_folgas_normalizado
 
 
+        # Visualização no Streamlit
+        #with st.expander("📍 Tabela ver1"):
+        #    st.dataframe(df_sec_folgas_normalizado)    
         # 🔵 4. Criar camada de CTOs filtradas no mapa
         
         
@@ -1026,7 +1028,7 @@ def registrar_callbacks(app):
                 ).add_to(camada_cto_filtradas)
 
             except Exception as e:
-                print(f"Erro ao desenhar CTO filtrada: {e}")
+                st.warning(f"Erro ao desenhar CTO filtrada: {e}")
 
 
         # 🔵 5. Adicionar a camada no mapa
@@ -1061,171 +1063,174 @@ def registrar_callbacks(app):
                 ).add_to(camada_ceos_filtradas)
 
             except Exception as e:
-                print(f"Erro ao desenhar CEO/CEOS filtrada: {e}")
+                st.warning(f"Erro ao desenhar CEO/CEOS filtrada: {e}")
 
         # 🔵 Adicionar a camada no mapa
         camada_ceos_filtradas.add_to(mapa)
 
+        import pandas as pd
+        from geopy.distance import geodesic
 
+        import pandas as pd
+        from geopy.distance import geodesic
 
-
-
-        # Criar dict: {(lat, lon) → folga}
-        cto_folgas = {
+        # ✅ Criar dicionário de folgas por segmento (Secundário - CTOs)
+        cto_folgas_segmentos = {
             (
                 round(float(str(row["LATITUDE_EQUIP1"]).replace(',', '.')), 6),
-                round(float(str(row["LONGITUDE_EQUIP1"]).replace(',', '.')), 6)
-            ): round(float(row["FOLGA"]), 2)
+                round(float(str(row["LONGITUDE_EQUIP1"]).replace(',', '.')), 6),
+                round(float(str(row["LATITUDE_EQUIP2"]).replace(',', '.')), 6),
+                round(float(str(row["LONGITUDE_EQUIP2"]).replace(',', '.')), 6)
+            ): {
+                "folga": round(float(row["FOLGA"]), 2),
+                "nome_equipamento": row["NOME_EQUIPAMENTO_1"],
+                "tipo_folga": 'CTO'
+            }
             for _, row in sec_filtrado_cto.iterrows()
         }
-        import pandas as pd
-        
 
-        # 🔵 Transformar o cto_folgas (dicionário) para uma lista amigável
-        dados_folga = []
-
-        for (lat, lon), folga in cto_folgas.items():
-            dados_folga.append({
-                "LATITUDE": lat,
-                "LONGITUDE": lon,
-                "FOLGA (m)": folga
-            })
-
-        # 🔵 Agora criar um DataFrame
+        # 🔎 Gerar DataFrame amigável para exibição
+        dados_folga = [
+            {
+                "NOME_EQUIPAMENTO": info["nome_equipamento"],
+                "LATITUDE_INICIAL": seg[0],
+                "LONGITUDE_INICIAL": seg[1],
+                "LATITUDE_FINAL": seg[2],
+                "LONGITUDE_FINAL": seg[3],
+                "FOLGA (m)": info["folga"],
+                "tipo_folga": info["tipo_folga"]
+            }
+            for seg, info in cto_folgas_segmentos.items()
+        ]
         df_cto_folgas = pd.DataFrame(dados_folga)
 
-        # Criar dict: {(lat, lon) → folga}
-        ceos_folgas = {
+        # ✅ Criar dicionário de folgas por segmento (Secundário - CTOs)
+        ceos_folgas_segmentos = {
             (
                 round(float(str(row["LATITUDE_EQUIP1"]).replace(',', '.')), 6),
-                round(float(str(row["LONGITUDE_EQUIP1"]).replace(',', '.')), 6)
-            ): round(float(row["FOLGA"]), 2)
+                round(float(str(row["LONGITUDE_EQUIP1"]).replace(',', '.')), 6),
+                round(float(str(row["LATITUDE_EQUIP2"]).replace(',', '.')), 6),
+                round(float(str(row["LONGITUDE_EQUIP2"]).replace(',', '.')), 6)
+            ): {
+                "folga": round(float(row["FOLGA"]), 2),
+                "nome_equipamento": row["NOME_EQUIPAMENTO_1"],
+                "tipo_folga": 'CEOS'
+            }
             for _, row in pri_filtrado_cto.iterrows()
         }
         
-        import pandas as pd
+        dados_folga = [
+            {
+                "NOME_EQUIPAMENTO": info["nome_equipamento"],
+                "LATITUDE_INICIAL": seg[0],
+                "LONGITUDE_INICIAL": seg[1],
+                "LATITUDE_FINAL": seg[2],
+                "LONGITUDE_FINAL": seg[3],
+                "FOLGA (m)": info["folga"],
+                "tipo_folga": info["tipo_folga"]
+            }
+            for seg, info in ceos_folgas_segmentos.items()
+        ]
+        df_ceos_folgas = pd.DataFrame(dados_folga)
         
+        df_cto_folgas_sorted = df_cto_folgas.copy()
+        df_ceos_folgas_sorted = df_ceos_folgas.copy()
+        df_folgas_combinado = pd.concat([df_cto_folgas, df_ceos_folgas], ignore_index=True)
 
-        # 🔵 Transformar o cto_folgas (dicionário) para uma lista amigável
-        dados_ceos_folga = []
-
-        for (lat, lon), folga in ceos_folgas.items():
-            dados_ceos_folga.append({
-                "LATITUDE": lat,
-                "LONGITUDE": lon,
-                "FOLGA (m)": folga
-            })
-
-        # 🔵 Agora criar um DataFrame
-        df_ceos_folgas = pd.DataFrame(dados_ceos_folga)
-
-        # 🔵 Exibir no Streamlit
+        caminho_reverso = caminho_total[::-1]
+        
+        # 📊 Mostrar tabela de folgas no Streamlit
         #st.subheader("📍 CTOs com Folga (Lista serializada)")
-        #st.dataframe(df_ceos_folgas.style.format({"FOLGA (m)": "{:.0f}"}), use_container_width=True)
-
-        # Gerar lista ordenada de CTOs com coordenadas + folga (de baixo pra cima)
-        cto_folgas_ordenadas = sorted(
-            cto_folgas.items(), 
-            key=lambda x: x[0][0]  # ordena pela latitude
-        )
-
-        # 🔵 Primeiro: calcular a nova distância corrigida pelas folgas
-        # 🔵 1. Recalcular a nova distância OTDR com as folgas antes de inverter o caminho
+        #st.dataframe(df_folgas_combinado.style.format({"FOLGA (m)": "{:.0f}"}), use_container_width=True)
 
         from geopy.distance import geodesic
 
-        distancia_restante = int(distancia_otdr)
+        try:
+            distancia_restante = int(float(distancia_otdr))
+        except (ValueError, TypeError):
+            distancia_restante = 0
+
+        #distancia_restante = int(distancia_otdr) if distancia_otdr and str(distancia_otdr).strip() != "" else 0
         nova_distancia_otdr = 0
-        log_folga = []
-
-        # 🔵 Ordenar o secundário por latitude decrescente
-        df_cto_folgas_sorted = df_cto_folgas.sort_values(by="LATITUDE", ascending=False).reset_index(drop=True)
-
-        # 🔵 Ordenar o primário também, para garantir
-        df_ceos_folgas_sorted = df_ceos_folgas
-
-        # 🧩 Controle para 500m percorridos no primário
         distancia_percorrida_primario = 0
+        log_folga = []
+        percorrendo_primario = False  # 🔒 só ativa após o primeiro ponto CEOS
 
-        # 🔥 1. Varredura dos pontos Secundários
-        for i in range(len(df_cto_folgas_sorted)):
-            lat_atual = df_cto_folgas_sorted.loc[i, "LATITUDE"]
-            lon_atual = df_cto_folgas_sorted.loc[i, "LONGITUDE"]
-            folga_atual = df_cto_folgas_sorted.loc[i, "FOLGA (m)"]
+        # 🔐 Lista ordenada de pontos onde há folga
+        pontos_folga_ordenados = [
+            (round(row["LATITUDE_INICIAL"], 6), round(row["LONGITUDE_INICIAL"], 6))
+            for _, row in df_folgas_combinado.iterrows()
+        ]
+        indice_folga = 0
 
-            # Desconta a folga primeiro
-            distancia_restante -= folga_atual
-            log_folga.append(f"📍 CTO {i}: {lat_atual:.6f}, {lon_atual:.6f} → -{folga_atual:.0f}m de folga | Saldo: {distancia_restante:.1f}m")
+        # ✅ Aplicar folga inicial se o primeiro ponto for ponto de folga
+        ponto_inicial = tuple(round(coord, 6) for coord in caminho_reverso[0])
 
-            if distancia_restante <= 0:
-                log_folga.append(f"💥 Falha detectada no CTO {i} (saldo {distancia_restante:.1f}m)")
-                break
+        if indice_folga < len(pontos_folga_ordenados) and ponto_inicial == pontos_folga_ordenados[indice_folga]:
+            nome = df_folgas_combinado.loc[indice_folga, "NOME_EQUIPAMENTO"]
+            folga = df_folgas_combinado.loc[indice_folga, "FOLGA (m)"]
+            tipo = df_folgas_combinado.loc[indice_folga, "tipo_folga"]
 
-            # Caminhar até o próximo CTO se possível
-            if i < len(df_cto_folgas_sorted) - 1:
-                lat_prox = df_cto_folgas_sorted.loc[i + 1, "LATITUDE"]
-                lon_prox = df_cto_folgas_sorted.loc[i + 1, "LONGITUDE"]
-                distancia_entre = geodesic((lat_atual, lon_atual), (lat_prox, lon_prox)).meters
+            distancia_restante -= folga
+            log_folga.append(f"📍 {nome} → Folga inicial aplicada: -{folga:.0f}m | Saldo: {distancia_restante:.1f}m")
 
-                if distancia_restante >= distancia_entre:
-                    nova_distancia_otdr += distancia_entre
-                    distancia_restante -= distancia_entre
-                    log_folga.append(f"➡️ Andou {distancia_entre:.1f}m até o próximo ponto | Novo saldo: {distancia_restante:.1f}m")
-                else:
-                    nova_distancia_otdr += distancia_restante
-                    log_folga.append(f"🛑 Parou no meio entre CTO {i} e {i+1} após andar {distancia_restante:.1f}m")
-                    distancia_restante = 0
-                    break
+            if tipo == "CEOS":
+                percorrendo_primario = True
 
-        # 🔥 2. Se sobrou saldo positivo, começa a varrer o Primário
-        if distancia_restante > 0:
-            log_folga.append(f"🔵 Iniciando percurso no Primário...")
+            indice_folga += 1
 
-            for i in range(len(df_ceos_folgas_sorted)):
-                lat_atual = df_ceos_folgas_sorted.loc[i, "LATITUDE"]
-                lon_atual = df_ceos_folgas_sorted.loc[i, "LONGITUDE"]
-                folga_atual = df_ceos_folgas_sorted.loc[i, "FOLGA (m)"]
+        # 🔥 Caminhar segmento a segmento
+        for i in range(len(caminho_reverso) - 1):
+            ponto1 = tuple(round(coord, 6) for coord in caminho_reverso[i])
+            ponto2 = tuple(round(coord, 6) for coord in caminho_reverso[i + 1])
 
-                # Descontar folga
-                distancia_restante -= folga_atual
-                log_folga.append(f"📍 CEOS {i}: {lat_atual:.6f}, {lon_atual:.6f} → -{folga_atual:.0f}m de folga | Saldo: {distancia_restante:.1f}m")
+            distancia = geodesic(ponto1, ponto2).meters
+
+            if distancia_restante >= distancia:
+                nova_distancia_otdr += distancia
+                distancia_restante -= distancia
+                log_folga.append(f"➡️ Andou {distancia:.1f}m | Saldo: {distancia_restante:.1f}m | {ponto1} → {ponto2}")
+
+                # 📍 Verificar se o ponto2 é um ponto de folga a aplicar
+                if indice_folga < len(pontos_folga_ordenados) and ponto2 == pontos_folga_ordenados[indice_folga]:
+                    nome = df_folgas_combinado.loc[indice_folga, "NOME_EQUIPAMENTO"]
+                    folga = df_folgas_combinado.loc[indice_folga, "FOLGA (m)"]
+                    tipo = df_folgas_combinado.loc[indice_folga, "tipo_folga"]
+
+                    distancia_restante -= folga
+                    log_folga.append(f"📍 {nome} → Folga aplicada: -{folga:.0f}m | Saldo: {distancia_restante:.1f}m")
+
+                    if tipo == "CEOS":
+                        percorrendo_primario = True
+
+                    indice_folga += 1
+
+                # 🔻 Redução extra só se estiver no primário
+                if percorrendo_primario:
+                    distancia_percorrida_primario += distancia
+                    if distancia_percorrida_primario >= 500:
+                        distancia_restante -= 20
+                        distancia_percorrida_primario -= 500
+                        log_folga.append(f"🔻 Redução extra de 20m após 500m percorridos | Saldo: {distancia_restante:.1f}m")
 
                 if distancia_restante <= 0:
-                    log_folga.append(f"💥 Falha detectada no CEOS {i} (saldo {distancia_restante:.1f}m)")
+                    log_folga.append(f"💥 Falha detectada após o ponto {ponto2}")
                     break
 
-                if i < len(df_ceos_folgas_sorted) - 1:
-                    lat_prox = df_ceos_folgas_sorted.loc[i + 1, "LATITUDE"]
-                    lon_prox = df_ceos_folgas_sorted.loc[i + 1, "LONGITUDE"]
-                    distancia_entre = geodesic((lat_atual, lon_atual), (lat_prox, lon_prox)).meters
+            else:
+                nova_distancia_otdr += distancia_restante
+                log_folga.append(f"🛑 Parou no meio do segmento após andar {distancia_restante:.1f}m | {ponto1} → {ponto2}")
+                distancia_restante = 0
+                break
 
-                    if distancia_restante >= distancia_entre:
-                        nova_distancia_otdr += distancia_entre
-                        distancia_restante -= distancia_entre
-                        distancia_percorrida_primario += distancia_entre
-
-                        log_folga.append(f"➡️ Andou {distancia_entre:.1f}m no primário | Novo saldo: {distancia_restante:.1f}m")
-
-                        # A cada 500m caminhados no primário, descontar 20m
-                        if distancia_percorrida_primario >= 500:
-                            desconto_extra = 20
-                            distancia_restante -= desconto_extra
-                            distancia_percorrida_primario -= 500
-                            log_folga.append(f"🔻 Redução extra de {desconto_extra}m a cada 500m percorridos | Novo saldo: {distancia_restante:.1f}m")
-
-                    else:
-                        nova_distancia_otdr += distancia_restante
-                        log_folga.append(f"🛑 Parou no meio entre CEOS {i} e {i+1} após andar {distancia_restante:.1f}m")
-                        distancia_restante = 0
-                        break
-
-        # 🔥 3. Se ainda sobrou saldo positivo, soma na distância final
+        # ✅ Se ainda sobrou saldo, soma no final
         if distancia_restante > 0:
             nova_distancia_otdr += distancia_restante
             log_folga.append(f"➕ Sobrou saldo positivo {distancia_restante:.1f}m, somado na distância final.")
 
         log_folga.append(f"✅ Nova distância OTDR para plotagem: {nova_distancia_otdr:.1f}m")
-        # 📦 Container tipo expander para mostrar o log
+
+ 
         container_log_folga = html.Details([
             html.Summary("🛠️ Log de cálculo da nova distância OTDR com folgas"),
             html.Div([
@@ -1250,7 +1255,6 @@ def registrar_callbacks(app):
         # 🔁 Inverter o caminho para obter o trajeto CTO → OLT
         caminho_reverso = caminho_total[::-1]
         #caminho_reverso = caminho_total
-
         # ⚡ Determinar o ponto da falha com base na distância OTDR
         if distancia_otdr and distancia_otdr.isdigit():
             nova_distancia_otdr = int(nova_distancia_otdr)
@@ -1306,6 +1310,7 @@ def registrar_callbacks(app):
             else:
                 print("Não foi possível localizar o ponto da falha na rota.")
 
+        
         
         # Desenho interativo com Folium
         Draw(export=True, filename='meu_desenho.geojson').add_to(mapa)
