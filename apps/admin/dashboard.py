@@ -2,7 +2,7 @@
 from dash import html, dcc, Input, Output, State, ctx
 from dash import register_page
 
-register_page(__name__, path="/admin_dashboard")
+#register_page(__name__, path="/admin_dashboard")
 
 def layout(session_data=None):
     # Protege acesso
