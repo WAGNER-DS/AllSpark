@@ -1,3 +1,4 @@
+#apps/admin/usuarios.py
 from dash import html, dcc, dash_table
 
 def layout(session_data=None):
@@ -29,5 +30,6 @@ def layout(session_data=None):
         html.Hr(),
 
         html.H4("📋 Usuários cadastrados"),
-        html.Div(id="tabela-usuarios")
+        html.Div(id="tabela-usuarios", children=[])
+
     ])
