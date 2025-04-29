@@ -9,6 +9,8 @@ from core.session import user_session
 from core.login_callbacks import registrar_login_callbacks
 from apps.app_otdr_view.callbacks import registrar_callbacks
 from utils.logger import inicializar_db
+
+from apps.admin.callbacks import registrar_callbacks_admin
 #from core.setup_db_postgres import criar_banco_postgres
 
 # Páginas
@@ -20,6 +22,9 @@ app = dash.Dash(__name__, server=server, suppress_callback_exceptions=True)
 # Registra callbacks
 registrar_login_callbacks(app)
 registrar_callbacks(app)
+registrar_callbacks_admin(app)
+
+
 
 #try:
 #    criar_banco_postgres()
