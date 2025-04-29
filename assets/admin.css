@@ -36,3 +36,84 @@
     color: white;
     overflow-y: auto;
 }
+/* Sidebar */
+.admin-sidebar {
+    background-color: #111;
+    color: white;
+    width: 220px;
+    height: 100vh;
+    padding: 20px;
+    position: fixed;
+    left: 0;
+    top: 0;
+    border-right: 1px solid #333;
+}
+
+.admin-sidebar h4 {
+    color: #00ffaa;
+    margin-bottom: 20px;
+}
+
+.admin-sidebar a {
+    display: block;
+    color: #00faff;
+    margin-bottom: 10px;
+    font-weight: bold;
+    text-decoration: none;
+}
+
+.admin-sidebar a:hover {
+    text-decoration: underline;
+}
+
+/* Conteúdo */
+.admin-content {
+    margin-left: 240px;
+    padding: 30px;
+    color: white;
+}
+
+/* Formulário */
+.admin-form {
+    background-color: #222;
+    padding: 20px;
+    border-radius: 8px;
+    max-width: 600px;
+    width: 100%;
+}
+
+.admin-form label {
+    margin-top: 10px;
+    display: block;
+    color: #ccc;
+}
+
+.admin-form input,
+.admin-form select {
+    width: 100%;
+    padding: 8px;
+    margin-top: 5px;
+    background-color: #333;
+    border: 1px solid #444;
+    color: white;
+    border-radius: 4px;
+}
+
+.admin-form button {
+    margin-top: 15px;
+    background-color: #1f4e79;
+    color: white;
+    padding: 10px;
+    border: none;
+    border-radius: 4px;
+}
+
+.admin-form button:hover {
+    background-color: #2c6faa;
+}
+
+/* Tabela */
+.dash-table-container .dash-spreadsheet-container {
+    background-color: #111 !important;
+    color: white !important;
+}
