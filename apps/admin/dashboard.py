@@ -1,3 +1,4 @@
+#apps/admin/dashboard.py
 from dash import html, dcc, Input, Output, State, ctx
 from dash import register_page
 
