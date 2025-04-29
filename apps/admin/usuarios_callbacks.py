@@ -34,16 +34,15 @@ def registrar_usuarios_callbacks(app):
     def criar_usuario(n_clicks, nome, email, senha, perfil_id):
         if not all([nome, email, senha, perfil_id]):
             return "⚠️ Preencha todos os campos.", atualizar_tabela_usuarios()
-
+    
         try:
-            conn = get_connection()
-            cursor = conn.cursor()
-            cursor.execute("""
-                INSERT INTO usuarios (nome, senha, email, perfil_id)
-                VALUES (%s, %s, %s, %s)
-            """, (nome, senha, email, perfil_id))
-            conn.commit()
-            conn.close()
+            with get_connection() as conn:
+                with conn.cursor() as cursor:
+                    cursor.execute("""
+                        INSERT INTO usuarios (nome, senha, email, perfil_id)
+                        VALUES (%s, %s, %s, %s)
+                    """, (nome, senha, email, perfil_id))
+                    conn.commit()
             return "✅ Usuário criado com sucesso!", atualizar_tabela_usuarios()
         except Exception as e:
             return f"❌ Erro: {e}", atualizar_tabela_usuarios()
@@ -60,16 +59,15 @@ def registrar_usuarios_callbacks(app):
 
 def atualizar_tabela_usuarios():
     try:
-        conn = get_connection()
-        cursor = conn.cursor()
-        cursor.execute("""
-            SELECT u.nome, u.email, p.nome as perfil
-            FROM usuarios u
-            JOIN perfis p ON u.perfil_id = p.id
-            ORDER BY u.id
-        """)
-        dados = cursor.fetchall()
-        conn.close()
+        with get_connection() as conn:
+            with conn.cursor() as cursor:
+                cursor.execute("""
+                    SELECT u.nome, u.email, p.nome as perfil
+                    FROM usuarios u
+                    JOIN perfis p ON u.perfil_id = p.id
+                    ORDER BY u.id
+                """)
+                dados = cursor.fetchall()
 
         colunas = ["Nome", "Email", "Perfil"]
         df = [dict(zip(colunas, linha)) for linha in dados]
