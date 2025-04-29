@@ -16,8 +16,10 @@ def registrar_usuarios_callbacks(app):
             cursor.execute("SELECT id, nome FROM perfis ORDER BY nome")
             perfis = cursor.fetchall()
             conn.close()
+            print("🔎 Perfis encontrados:", perfis)  # DEBUG
             return [{"label": nome, "value": id} for id, nome in perfis]
         except Exception as e:
+            print("❌ Erro ao carregar perfis:", e)  # DEBUG
             return []
 
     # Criar novo usuário
@@ -33,6 +35,7 @@ def registrar_usuarios_callbacks(app):
     )
     def criar_usuario(n_clicks, nome, email, senha, perfil_id):
         if not all([nome, email, senha, perfil_id]):
+            print("⚠️ Campos obrigatórios não preenchidos")  # DEBUG
             return "⚠️ Preencha todos os campos.", atualizar_tabela_usuarios()
 
         try:
@@ -44,8 +47,10 @@ def registrar_usuarios_callbacks(app):
             """, (nome, senha, email, perfil_id))
             conn.commit()
             conn.close()
+            print(f"✅ Usuário {nome} criado com sucesso!")  # DEBUG
             return "✅ Usuário criado com sucesso!", atualizar_tabela_usuarios()
         except Exception as e:
+            print("❌ Erro ao criar usuário:", e)  # DEBUG
             return f"❌ Erro: {e}", atualizar_tabela_usuarios()
 
     # Carrega a tabela de usuários ao iniciar
@@ -70,6 +75,7 @@ def atualizar_tabela_usuarios():
         """)
         dados = cursor.fetchall()
         conn.close()
+        print("👥 Usuários carregados:", dados)  # DEBUG
 
         colunas = ["Nome", "Email", "Perfil"]
         df = [dict(zip(colunas, linha)) for linha in dados]
@@ -91,4 +97,5 @@ def atualizar_tabela_usuarios():
             page_size=10
         )
     except Exception as e:
+        print("❌ Erro ao carregar usuários:", e)  # DEBUG
         return html.Div(f"Erro ao carregar usuários: {e}", style={"color": "red"})
