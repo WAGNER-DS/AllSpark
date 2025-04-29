@@ -78,12 +78,13 @@ def navegar_via_botao(n_clicks_list):
 @app.callback(
     Output("page-content", "children"),
     Input("url", "pathname"),
+    Input("url", "search"),
     State("login-store", "data")
 )
 def roteador(pathname, session_data):
     print(f"📌 PATH: {pathname}")
+    print(f"🔍 SEARCH: {search}")
     print(f"📦 Session Data: {session_data}")
-
     user = session_data.get("user") if session_data else None
 
     if not user and pathname != "/login":
