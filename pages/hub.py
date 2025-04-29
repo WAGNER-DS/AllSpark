@@ -4,6 +4,7 @@ from core.session import user_session
 
 def layout(session_data=None):
     user = session_data.get("user") if session_data else user_session.get("user")
+    perfil_id = session_data.get("perfil_id") if session_data else user_session.get("perfil_id")
 
     if not user:
         return html.Div("⏳ Aguardando sessão...", style={"color": "white", "padding": "40px"})
@@ -19,10 +20,9 @@ def layout(session_data=None):
         ("B2B", "/app_B2B"),
     ]
 
-    return html.Div([
+    layout_principal = html.Div([
         html.Div("ALLSPARK HUB", className="hub-title"),
         html.Div([
-            # Linhas SVG
             html.Div([
                 dcc.Markdown("""
                     <svg class="hub-lines" width="600" height="600">
@@ -38,10 +38,8 @@ def layout(session_data=None):
                 """, dangerously_allow_html=True)
             ], className="svg-container"),
 
-            # Cubo central
             html.Img(src="/assets/allspark_cube.png", className="center-cube-img"),
 
-            # Botões com imagem clicável e legenda
             *[
                 html.Div([
                     html.A(
@@ -51,6 +49,29 @@ def layout(session_data=None):
                     html.Div(nome, className="orb-label")
                 ], className=f"orb orb-{i+1}")
                 for i, (nome, rota) in enumerate(botoes)
-            ]
+            ],
+
+            # ✅ Se for admin, adiciona engrenagem fixa no canto inferior direito
+            html.Div([
+                dcc.Link(
+                    html.I(className="fas fa-cogs"),  # Ícone de engrenagem
+                    href="/admin_dashboard",
+                    style={
+                        "fontSize": "36px",
+                        "color": "#00ffaa",
+                        "position": "fixed",
+                        "bottom": "30px",
+                        "right": "30px",
+                        "zIndex": "9999",
+                        "cursor": "pointer",
+                        "backgroundColor": "#111",
+                        "padding": "12px",
+                        "borderRadius": "50%",
+                        "boxShadow": "0 0 10px #00ffaa"
+                    }
+                )
+            ]) if perfil_id == 1 else None
         ], className="hub-orbit")
     ], className="hub-container")
+
+    return layout_principal
