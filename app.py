@@ -78,55 +78,63 @@ def navegar_via_botao(n_clicks_list):
 @app.callback(
     Output("page-content", "children"),
     Input("url", "pathname"),
-    Input("url", "search"),
+    Input("url", "search"),  # Inclui parâmetros GET
     State("login-store", "data")
 )
-def roteador(pathname, session_data):
+def roteador(pathname, search, session_data):
     print(f"📌 PATH: {pathname}")
     print(f"🔍 SEARCH: {search}")
     print(f"📦 Session Data: {session_data}")
-    user = session_data.get("user") if session_data else None
 
-    if not user and pathname != "/login":
-        return login.layout
+    try:
+        user = session_data.get("user") if session_data else None
 
-    if pathname in ["/", "/login"]:
-        return login.layout
-    elif pathname == "/hub":
-        return hub.layout(session_data)
-    elif pathname == "/app_postes":
-        from apps.app_postes.layout import layout as app_postes_layout
-        return app_postes_layout(session_data)
-    elif pathname == "/app_preventiva":
-        from apps.app_preventiva.layout import layout as app_preventiva_layout
-        return app_preventiva_layout(session_data)
-    elif pathname == "/app_alivio":
-        from apps.app_alivio.layout import layout as app_alivio_layout
-        return app_alivio_layout(session_data)
-    elif pathname == "/app_B2B":
-        from apps.app_B2B.layout import layout as app_b2b_layout
-        return app_b2b_layout(session_data)
-    elif pathname == "/app_OSP_diagnostics":
-        from apps.app_OSP_diagnostics.layout import layout as app_diag_layout
-        return app_diag_layout(session_data)
-    elif pathname == "/app_projeto":
-        from apps.app_projeto.layout import layout as app_projeto_layout
-        return app_projeto_layout(session_data)
-    elif pathname == "/app_radar_cto":
-        from apps.app_radar_cto.layout import layout as app_radar_layout
-        return app_radar_layout(session_data)
-    elif pathname == "/app_otdr_view":
-        from apps.app_otdr_view.layout import layout as app_otdr_view_layout
-        return app_otdr_view_layout(session_data)
-    elif pathname == "/app_otdr_logs":
-        from apps.app_otdr_view.logs import layout as logs_layout
-        return logs_layout(session_data)
-    elif pathname.startswith("/admin_dashboard"):
-        from apps.admin.dashboard import layout as admin_layout
-        return admin_layout(session_data)
+        if not user and pathname != "/login":
+            return login.layout
 
+        if pathname in ["/", "/login"]:
+            return login.layout
+        elif pathname == "/hub":
+            return hub.layout(session_data)
+        elif pathname.startswith("/admin_dashboard"):
+            from apps.admin.dashboard import layout as admin_layout
+            return admin_layout(session_data)
+        elif pathname == "/app_postes":
+            from apps.app_postes.layout import layout as app_postes_layout
+            return app_postes_layout(session_data)
+        elif pathname == "/app_preventiva":
+            from apps.app_preventiva.layout import layout as app_preventiva_layout
+            return app_preventiva_layout(session_data)
+        elif pathname == "/app_alivio":
+            from apps.app_alivio.layout import layout as app_alivio_layout
+            return app_alivio_layout(session_data)
+        elif pathname == "/app_B2B":
+            from apps.app_B2B.layout import layout as app_b2b_layout
+            return app_b2b_layout(session_data)
+        elif pathname == "/app_OSP_diagnostics":
+            from apps.app_OSP_diagnostics.layout import layout as app_diag_layout
+            return app_diag_layout(session_data)
+        elif pathname == "/app_projeto":
+            from apps.app_projeto.layout import layout as app_projeto_layout
+            return app_projeto_layout(session_data)
+        elif pathname == "/app_radar_cto":
+            from apps.app_radar_cto.layout import layout as app_radar_layout
+            return app_radar_layout(session_data)
+        elif pathname == "/app_otdr_view":
+            from apps.app_otdr_view.layout import layout as app_otdr_view_layout
+            return app_otdr_view_layout(session_data)
+        elif pathname == "/app_otdr_logs":
+            from apps.app_otdr_view.logs import layout as logs_layout
+            return logs_layout(session_data)
 
-    return not_found.layout()
+        return not_found.layout()
+    
+    except Exception as e:
+        print(f"❌ Erro no roteador: {e}")
+        return html.Div([
+            html.H3("❌ Erro interno no roteador", style={"color": "red"}),
+            html.Pre(str(e), style={"color": "salmon"})
+        ])
 
 # Executa
 if __name__ == "__main__":
