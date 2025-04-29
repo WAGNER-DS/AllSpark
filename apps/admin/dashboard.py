@@ -10,27 +10,15 @@ def layout(session_data=None):
         return html.Div("🔒 Acesso restrito a administradores.", style={"color": "red", "padding": "40px"})
 
     menu = html.Div([
-        html.H4("⚙️ Admin", style={"color": "#00ffaa", "padding": "10px"}),
+        html.H4("⚙️ Admin"),
         html.Hr(),
         dcc.Link("👤 Usuários", href="/admin_dashboard?view=usuarios"),
-        html.Br(),
         dcc.Link("🧩 Perfis", href="/admin_dashboard?view=perfis"),
-        html.Br(),
         dcc.Link("📦 Apps", href="/admin_dashboard?view=apps"),
-        html.Br(),
         dcc.Link("🔑 Permissões", href="/admin_dashboard?view=permissoes"),
-        html.Br(),
         dcc.Link("📜 Logs", href="/app_otdr_logs")
-    ], style={
-        "backgroundColor": "#111",
-        "color": "white",
-        "width": "220px",
-        "height": "100vh",
-        "padding": "20px",
-        "position": "fixed",
-        "left": "0",
-        "top": "0"
-    })
+    ], className="admin-sidebar")
+
 
     conteudo = html.Div(id="admin-content", style={"marginLeft": "240px", "padding": "20px"})
 
