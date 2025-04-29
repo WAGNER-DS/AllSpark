@@ -45,16 +45,7 @@ def registrar_usuarios_callbacks(app):
         except Exception as e:
             return f"❌ Erro: {e}", atualizar_tabela_usuarios()
 
-    # Atualiza a tabela de usuários (inicial ou após inserção)
-    @app.callback(
-        Output("tabela-usuarios", "children"),
-        Input("tabela-usuarios", "id"),
-        prevent_initial_call=True
-    )
-    def carregar_tabela(_=None):
-        return atualizar_tabela_usuarios()
-
-
+    
 def atualizar_tabela_usuarios():
     try:
         conn = get_connection()
