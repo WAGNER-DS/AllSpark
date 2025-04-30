@@ -1378,7 +1378,21 @@ def registrar_callbacks(app):
 
 
 
+        # 🔐 Registrar consulta OTDR no banco de dados PostgreSQL
+        session = user_session
 
+        registrar_consulta(
+            user=session.get("user"),
+            ip=get_user_ip(),
+            uf=uf,
+            municipio=municipio,
+            cto=cto,
+            distancia_otdr=distancia_otdr,
+            lat_cto=lat,
+            lon_cto=lon,
+            lat_falha=ponto_falha[0] if 'ponto_falha' in locals() and ponto_falha else None,
+            lon_falha=ponto_falha[1] if 'ponto_falha' in locals() and ponto_falha else None
+        )
 
 
 
