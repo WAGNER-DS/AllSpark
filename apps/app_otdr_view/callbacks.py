@@ -170,6 +170,7 @@ def registrar_callbacks(app):
                     }, inplace=True)
                 distancia_secundario = sec_filtrado["COMPRIMENTO_GEOMETRICO"].sum()
             uid_ceos = sec_filtrado["UID_EQUIPAMENTO_A"].unique().tolist()
+            distancia_secundario = sec_filtrado["COMPRIMENTO_GEOMETRICO"].sum()
         print(uid_ceos)
         #if os.path.exists(caminho_secundarios):
         #    df_sec = pd.read_csv(caminho_secundarios, sep='|')
@@ -278,7 +279,7 @@ def registrar_callbacks(app):
                     }, inplace=True)
                 distancia_sec = sec_filtrado["COMPRIMENTO_GEOMETRICO"].sum()
             uid_ceos = sec_filtrado["UID_EQUIPAMENTO_A"].unique().tolist()
-    
+            distancia_sec = sec_filtrado["COMPRIMENTO_GEOMETRICO"].sum()
                     
 
 
