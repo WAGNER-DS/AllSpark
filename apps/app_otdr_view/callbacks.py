@@ -1380,7 +1380,8 @@ def registrar_callbacks(app):
 
 
         # 🔐 Registrar consulta OTDR no banco de dados PostgreSQL
-        session = user_session.get_data()
+        session = user_session
+
         registrar_consulta(
             user=session.get("user"),
             ip=get_user_ip(),
