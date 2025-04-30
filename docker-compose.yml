@@ -16,7 +16,7 @@ services:
     restart: always
     environment:
       POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: senha123
+      POSTGRES_PASSWORD: wds2025
       POSTGRES_DB: allspark_logs
     volumes:
       - pgdata:/var/lib/postgresql/data
